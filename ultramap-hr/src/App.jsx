@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "firebase/auth";
-import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
 import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key } from 'lucide-react';
 
-// --- 1. CONFIG FIREBASE (DIPERBETULKAN) ---
+// --- 1. CONFIG FIREBASE (PASTIKAN TIADA ERROR DI SINI) ---
 const firebaseConfig = {
   apiKey: "AIzaSyD_1BO0kY9CpzselHNIG-NiuNbqitaywE8", 
   authDomain: "ultramap-hr.firebaseapp.com",
@@ -15,20 +15,21 @@ const firebaseConfig = {
   measurementId: "G-40VRCBXNL8"
 };
 
-// Initialize Firebase (Clean Initialization)
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize Firebase (Clean & Safe)
+let app, auth, db;
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+} catch (e) {
+  console.error("Firebase Init Error:", e);
+}
 
 // --- DATA INITIAL ---
 const SEED_USERS = [
-  // Admin 1
   { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
-  // Admin 2
   { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
-  // Staff 1
   { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
-  // Staff 2
   { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
 ];
 
@@ -149,10 +150,8 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
         if (!attendance.some(a => a.date === dateStr && a.userId === targetUserId)) { if (!window.confirm("Hari ini Ahad. Confirm kerja Site?")) return; }
     }
     const existingIndex = attendance.findIndex(a => a.date === dateStr && a.userId === targetUserId);
-    let newAttendance = [...attendance];
-    if (existingIndex >= 0) newAttendance.splice(existingIndex, 1);
-    else newAttendance.push({ date: dateStr, userId: targetUserId, type: 'site' });
-    setAttendance(dateStr, targetUserId, 'site'); 
+    if (existingIndex >= 0) setAttendance(dateStr, targetUserId, 'site', true); // True = Delete
+    else setAttendance(dateStr, targetUserId, 'site', false); // False = Add
   };
 
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
@@ -226,26 +225,37 @@ export default function App() {
   const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Login Gagal: " + err.message); } };
   const handleLogout = () => signOut(auth);
   
-  // SEED DB FOR FIRST RUN
+  // SEED DB FOR FIRST RUN - FIX DUPLICATE LOGIC
   const handleSeedData = async () => {
     if (!confirm("Adakah anda pasti? Ini akan masukkan data asal jika database kosong.")) return;
     try {
         await setDoc(doc(db, "settings", "global"), { customSubmissionDate: null });
+        
         for (const u of SEED_USERS) {
+            // CHECK IF USER EXISTS FIRST
             const q = query(collection(db, "users"), where("email", "==", u.email));
-            // Just add, no complex check for this simple seed script
-            await addDoc(collection(db, "users"), u);
+            const querySnapshot = await getDocs(q);
+            
+            if (querySnapshot.empty) {
+                await addDoc(collection(db, "users"), u);
+                console.log(`Added user: ${u.name}`);
+            } else {
+                console.log(`User already exists: ${u.name}`);
+            }
         }
-        alert("Database seeded! Sila create akaun di Firebase Auth tab dengan email yang sama.");
+        alert("Database seeded! (Duplicates prevented). Sila create akaun di Firebase Auth tab dengan email yang sama.");
     } catch(e) {
         alert("Error seeding: " + e.message);
     }
   };
 
-  const toggleAttendanceDB = async (dateStr, userId, type) => {
-      const existing = attendance.find(a => a.date === dateStr && a.userId === userId);
-      if (existing) await deleteDoc(doc(db, "attendance", existing.id));
-      else await addDoc(collection(db, "attendance"), { date: dateStr, userId, type });
+  const toggleAttendanceDB = async (dateStr, userId, type, shouldDelete) => {
+      if (shouldDelete) {
+          const existing = attendance.find(a => a.date === dateStr && a.userId === userId);
+          if (existing) await deleteDoc(doc(db, "attendance", existing.id));
+      } else {
+          await addDoc(collection(db, "attendance"), { date: dateStr, userId, type });
+      }
   };
   const submitLeaveDB = async (leaveData) => { await addDoc(collection(db, "leaves"), leaveData); alert("Permohonan cuti dihantar!"); };
   const deleteLeaveDB = async (id) => { if(confirm("Padam?")) await deleteDoc(doc(db, "leaves", id)); };
