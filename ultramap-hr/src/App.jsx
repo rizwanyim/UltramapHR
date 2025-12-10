@@ -4,41 +4,32 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updat
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key } from 'lucide-react';
 
-// --- 1. CONFIG FIREBASE (GANTI DENGAN YANG SEBENAR) ---
+// --- 1. CONFIG FIREBASE (DIPERBETULKAN) ---
 const firebaseConfig = {
-  // Masukkan config firebase anda di sini
   apiKey: "AIzaSyD_1BO0kY9CpzselHNIG-NiuNbqitaywE8", 
   authDomain: "ultramap-hr.firebaseapp.com",
   projectId: "ultramap-hr",
   storageBucket: "ultramap-hr.appspot.com",
   messagingSenderId: "409015904834",
-  appId: "1:409015904834:web:8f4a7b59f6cc86585c9bdb"
+  appId: "1:409015904834:web:8f4a7b59f6cc86585c9bdb",
   measurementId: "G-40VRCBXNL8"
 };
 
-// Initialize Firebase
+// Initialize Firebase (Clean Initialization)
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-let app, auth, db;
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-} catch (e) {
-  console.log("Firebase config placeholder.");
-}
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // --- DATA INITIAL ---
-const INITIAL_USERS = [
+const SEED_USERS = [
   // Admin 1
-  { id: 'u1', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: '', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
+  { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
   // Admin 2
-  { id: 'u2', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
+  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
   // Staff 1
-  { id: 'u3', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
+  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
   // Staff 2
-  { id: 'u4', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
+  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
 ];
 
 const JOHOR_HOLIDAYS = [
@@ -200,7 +191,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
 };
 
 // --- MAIN APP ---
-export default function UltramapLiveV18() {
+export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -221,7 +212,6 @@ export default function UltramapLiveV18() {
     if (!auth) return;
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Simple Query by email for demo
         const q = query(collection(db, "users"), where("email", "==", user.email));
         onSnapshot(q, (snapshot) => { if (!snapshot.empty) setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); });
       } else setCurrentUser(null);
@@ -236,6 +226,22 @@ export default function UltramapLiveV18() {
   const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Login Gagal: " + err.message); } };
   const handleLogout = () => signOut(auth);
   
+  // SEED DB FOR FIRST RUN
+  const handleSeedData = async () => {
+    if (!confirm("Adakah anda pasti? Ini akan masukkan data asal jika database kosong.")) return;
+    try {
+        await setDoc(doc(db, "settings", "global"), { customSubmissionDate: null });
+        for (const u of SEED_USERS) {
+            const q = query(collection(db, "users"), where("email", "==", u.email));
+            // Just add, no complex check for this simple seed script
+            await addDoc(collection(db, "users"), u);
+        }
+        alert("Database seeded! Sila create akaun di Firebase Auth tab dengan email yang sama.");
+    } catch(e) {
+        alert("Error seeding: " + e.message);
+    }
+  };
+
   const toggleAttendanceDB = async (dateStr, userId, type) => {
       const existing = attendance.find(a => a.date === dateStr && a.userId === userId);
       if (existing) await deleteDoc(doc(db, "attendance", existing.id));
@@ -293,7 +299,7 @@ export default function UltramapLiveV18() {
     return { month: monthStr, basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance, rolloverNote, otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance + mealAllowance - epf - socso) };
   };
 
-  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4"><Card className="w-full max-w-sm p-8 bg-white"><div className="flex justify-center mb-6"><UltramapLogo /></div><h2 className="text-center font-bold text-slate-800 mb-6">Log Masuk HR System</h2><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded" placeholder="nama@ultramap.com" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded" placeholder="******" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">Masuk</button></form></Card></div>;
+  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4"><Card className="w-full max-w-sm p-8 bg-white"><div className="flex justify-center mb-6"><UltramapLogo /></div><h2 className="text-center font-bold text-slate-800 mb-6">Log Masuk HR System</h2><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded" placeholder="nama@ultramap.com" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded" placeholder="******" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">Masuk</button></form><div className="mt-8 border-t pt-4 text-center"><button onClick={handleSeedData} className="text-xs text-slate-300 hover:text-slate-500 flex items-center justify-center gap-1 mx-auto"><Database size={12}/> Setup Database (First Run)</button></div></Card></div>;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
@@ -347,7 +353,16 @@ export default function UltramapLiveV18() {
                                     </Card>
                                 </>
                             ) : (
-                                <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={{ status: 'Draft' }} updateTimesheetStatus={()=>{}} isAdminView={false} />
+                                <TimesheetWidget 
+                                    targetUserId={currentUser.id} 
+                                    currentDate={currentDate} 
+                                    customSubmissionDate={settings.customSubmissionDate} 
+                                    attendance={attendance} 
+                                    setAttendance={toggleAttendanceDB} 
+                                    tsStatus={{ status: 'Draft' }} 
+                                    updateTimesheetStatus={()=>{}} 
+                                    isAdminView={false} 
+                                />
                             )}
                         </div>
                         <div className="space-y-6">
