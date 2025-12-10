@@ -2,42 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "firebase/auth";
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
-import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key } from 'lucide-react';
+import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key, History } from 'lucide-react';
 
-// --- 1. CONFIG FIREBASE (DAH DIPERBETULKAN) ---
+// --- 1. CONFIG FIREBASE ---
 const firebaseConfig = {
   apiKey: "AIzaSyD_1BO0kY9CpzselHNIG-NiuNbqitaywE8", 
   authDomain: "ultramap-hr.firebaseapp.com",
   projectId: "ultramap-hr",
   storageBucket: "ultramap-hr.appspot.com",
   messagingSenderId: "409015904834",
-  appId: "1:409015904834:web:8f4a7b59f6cc86585c9bdb", // Koma ditambah
+  appId: "1:409015904834:web:8f4a7b59f6cc86585c9bdb",
   measurementId: "G-40VRCBXNL8"
 };
 
-// Initialize Firebase (Logic diperbetulkan supaya tak clash)
 let app, auth, db;
 try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
 } catch (e) {
-  console.error("Firebase Error:", e);
+  console.error("Firebase Init Error:", e);
 }
 
-// --- DATA INITIAL (SEPERTI YANG TUAN MINTA) ---
+// --- DATA INITIAL ---
 const SEED_USERS = [
-  // Admin 1
   { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
-  // Admin 2
-  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
-  // Staff 1
-  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
-  // Staff 2
-  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
+  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'ADMIN', ic: '920426-03-6249', baseSalary: 4500, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
+  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'STAFF', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
+  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'STAFF', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 14 },
 ];
 
 const JOHOR_HOLIDAYS = [
+  { date: '2025-12-25', name: 'Hari Krismas' }
   { date: '2026-02-01', name: 'Hari Thaipusam' }, 
   { date: '2026-02-02', name: 'Cuti Hari Thaipusam' }, 
   { date: '2026-02-17', name: 'Tahun Baru Cina' }, 
@@ -60,31 +56,52 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
 
+// --- HELPER FUNCTIONS ---
+const calculateLeaveDuration = (startDate, endDate) => {
+  if (!startDate || !endDate) return 0;
+  let count = 0;
+  let current = new Date(startDate);
+  const end = new Date(endDate);
+  
+  while (current <= end) {
+    const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+    const isSunday = current.getDay() === 0;
+    const isPublicHoliday = JOHOR_HOLIDAYS.some(h => h.date === dateStr);
+
+    if (!isSunday && !isPublicHoliday) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return count;
+};
+
 // --- HELPER COMPONENTS ---
 const Card = ({ children, className = "" }) => <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>{children}</div>;
 const Badge = ({ status }) => {
   const styles = { Pending: "bg-yellow-100 text-yellow-800 border-yellow-200", Approved: "bg-emerald-100 text-emerald-800 border-emerald-200", Rejected: "bg-red-100 text-red-800 border-red-200", Draft: "bg-gray-100 text-gray-500 border-gray-200", Submitted: "bg-blue-100 text-blue-800 border-blue-200" };
   return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${styles[status] || styles.Pending}`}>{status}</span>;
 };
+
 const UltramapLogo = () => (
-  <svg viewBox="0 0 350 80" className="h-10 w-auto" xmlns="http://www.w3.org/2000/svg">
-    <line x1="40" y1="10" x2="40" y2="70" stroke="black" strokeWidth="1" />
-    <line x1="10" y1="40" x2="70" y2="40" stroke="black" strokeWidth="1" />
-    <circle cx="40" cy="40" r="25" fill="none" stroke="black" strokeWidth="2" />
-    <circle cx="40" cy="40" r="18" fill="none" stroke="blue" strokeWidth="1" />
-    <text x="40" y="55" fontFamily="Arial, sans-serif" fontSize="40" fontWeight="bold" fill="#DC2626" textAnchor="middle">U</text>
-    <text x="75" y="55" fontFamily="Arial, sans-serif" fontSize="40" fontWeight="bold" fill="#DC2626">LTRA</text>
-    <text x="205" y="55" fontFamily="Arial, sans-serif" fontSize="40" fontWeight="bold" fill="black">MAP</text>
-    <text x="205" y="75" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="black" letterSpacing="2">SOLUTION</text>
-    <text x="345" y="75" fontFamily="Arial, sans-serif" fontSize="10" fill="#666" textAnchor="end">JM0876813-V</text>
-  </svg>
+  <img 
+    src="/logo.png" 
+    alt="ULTRAMAP SOLUTION" 
+    className="h-12 w-auto object-contain"
+    onError={(e) => {
+      e.target.onerror = null; 
+      e.target.style.display = 'none';
+      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-xl">ULTRAMAP</span>'; 
+    }}
+  />
 );
 
-// --- PAYSLIP (LANDSCAPE) ---
+// --- PAYSLIP (LANDSCAPE A4) ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
   const netPay = totalEarnings - totalDeductions;
+
   return (
     <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen">
       <div className="bg-white shadow-2xl p-10 w-[297mm] min-h-[210mm] min-w-[297mm] text-black font-sans text-sm relative print:shadow-none print:w-full print:min-w-0 print:absolute print:top-0 print:left-0 print:m-0 print:landscape">
@@ -128,7 +145,7 @@ const PayslipDesign = ({ data, user }) => {
   );
 };
 
-// --- TIMESHEET WIDGET ---
+// --- TIMESHEET WIDGET (UPDATED FOR HOLIDAY CONFIRMATION & DISPLAY) ---
 const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, attendance, setAttendance, tsStatus, updateTimesheetStatus, isAdminView }) => {
   const [swipeIndex, setSwipeIndex] = useState(0);
   const isPastCutoff = customSubmissionDate !== null && currentDate.getDate() >= customSubmissionDate;
@@ -142,18 +159,37 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   const isSubmissionOpen = currentDate.getDate() >= effectiveOpenDate;
   const canSubmit = isSubmissionOpen && (tsStatus.status === 'Draft' || tsStatus.status === 'Rejected');
   
+  // 1. Filter holidays for current view
+  const activeHolidays = JOHOR_HOLIDAYS.filter(h => {
+    const hDate = new Date(h.date);
+    return hDate.getMonth() === displayMonth && hDate.getFullYear() === displayYear;
+  });
+
   const handleToggle = (day) => {
     const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    if (JOHOR_HOLIDAYS.find(h => h.date === dateStr)) return;
+    const holidayInfo = JOHOR_HOLIDAYS.find(h => h.date === dateStr);
+
     let isLocked = false;
     if (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) isLocked = true;
     if (isAdminView || tsStatus.status === 'Submitted' || tsStatus.status === 'Approved') isLocked = true;
     if (isLocked) { if (!isAdminView) alert("Tarikh ini dikunci."); return; }
-    const clickedDate = new Date(displayYear, displayMonth, day);
-    if (clickedDate.getDay() === 0) { 
-        if (!attendance.some(a => a.date === dateStr && a.userId === targetUserId)) { if (!window.confirm("Hari ini Ahad. Confirm kerja Site?")) return; }
+    
+    // Check Status Before Toggle (Are we adding or removing?)
+    const isCurrentlySite = attendance.some(a => a.date === dateStr && a.userId === targetUserId);
+
+    // 2. Holiday Confirmation (Only if Adding Site)
+    if (holidayInfo && !isCurrentlySite) {
+        if (!window.confirm(`Hari ini ${holidayInfo.name} (Cuti Am). Confirm kerja Site?`)) return;
     }
-    setAttendance(dateStr, targetUserId, 'site'); 
+
+    const clickedDate = new Date(displayYear, displayMonth, day);
+    if (clickedDate.getDay() === 0 && !isCurrentlySite) { 
+        if (!window.confirm("Hari ini Ahad. Confirm kerja Site?")) return; 
+    }
+    
+    // Toggle Logic via DB Handler
+    if (isCurrentlySite) setAttendance(dateStr, targetUserId, 'site', true); // Delete
+    else setAttendance(dateStr, targetUserId, 'site', false); // Add
   };
 
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
@@ -180,19 +216,58 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             const isSunday = new Date(displayYear, displayMonth, day).getDay() === 0;
             let isVisualLock = (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) || isAdminView || (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved');
             let btnClass = "bg-white text-slate-500 border-slate-100 hover:border-blue-300";
-            if (isHoliday) btnClass = "bg-orange-100 text-orange-600 border-orange-200 cursor-not-allowed font-bold";
+            if (isHoliday) btnClass = "bg-orange-100 text-orange-600 border-orange-200 font-bold"; // Allow click, just warn
             else if (isSite) btnClass = isVisualLock ? "bg-slate-400 text-white border-slate-500" : "bg-emerald-500 text-white shadow-md border-emerald-600";
             else if (isSunday) btnClass = "bg-slate-200 text-slate-400 border-slate-300";
             else if (isVisualLock) btnClass = "opacity-50 cursor-not-allowed bg-slate-50 text-slate-300";
-            return <button key={day} onClick={() => handleToggle(day)} disabled={isHoliday || (isVisualLock && !isSite)} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative ${btnClass}`}><span className="font-bold">{day}</span>{isSite && !isVisualLock && !isHoliday && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}{isVisualLock && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}</button>;
+            
+            // Override style if it IS Site (even if holiday/sunday)
+            if (isSite && !isVisualLock) btnClass = "bg-emerald-500 text-white shadow-md border-emerald-600";
+
+            return <button key={day} onClick={() => handleToggle(day)} disabled={isVisualLock} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative ${btnClass}`}><span className="font-bold">{day}</span>{isSite && !isVisualLock && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}{isVisualLock && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}</button>;
       })}</div></div>
+      
+      {/* 3. SENARAI CUTI AM (DISPLAY) */}
+      {activeHolidays.length > 0 && (
+        <div className="mb-4 space-y-1">
+            {activeHolidays.map((h, i) => (
+                <div key={i} className="text-[10px] flex items-center gap-2 text-orange-700 bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                    <span className="font-bold bg-orange-200 px-1 rounded text-orange-800">{new Date(h.date).getDate()}</span>
+                    <span>{h.name}</span>
+                </div>
+            ))}
+        </div>
+      )}
+
       <div className="mt-auto flex justify-between items-center border-t pt-4"><div><p className="text-xs text-slate-500 uppercase font-bold">Total ({getMonthStr(displayDate)})</p><p className="text-xl font-bold text-emerald-600">{displayCount} <span className="text-[10px] font-normal text-slate-500">{countLabel}</span></p></div>{!isAdminView && !isPastCutoff && tsStatus.status !== 'Submitted' && tsStatus.status !== 'Approved' && (<button disabled={!canSubmit} onClick={canSubmit ? () => updateTimesheetStatus(targetUserId, 'Submitted') : undefined} className={`px-4 py-2 rounded font-bold text-xs shadow-lg transition-all ${canSubmit ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>{isSubmissionOpen ? "Hantar untuk Semakan" : `Hantar (Dibuka ${effectiveOpenDate}hb)`}</button>)}{isPastCutoff && <div className="text-right"><p className="text-[10px] text-slate-400 italic">{swipeIndex === 0 ? `1-${customSubmissionDate}hb Dikunci` : "Termasuk Baki"}</p></div>}</div>
     </Card>
   );
 };
 
+// --- BORANG CUTI ---
+const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
+  const [newLeave, setNewLeave] = useState({ startDate: '', endDate: '', type: 'AL', reason: '' });
+  const leaveDuration = calculateLeaveDuration(newLeave.startDate, newLeave.endDate);
+  const handleLeaveSubmit = (e) => { e.preventDefault(); setLeaves({ ...newLeave, id: Date.now(), userId: currentUser.id, status: 'Pending', days: leaveDuration }); setNewLeave({ startDate: '', endDate: '', type: 'AL', reason: '' }); };
+  const handleWithdrawLeave = (leaveId) => { if (window.confirm("Adakah anda pasti mahu membatalkan cuti ini?")) { deleteLeaveDB(leaveId); } };
+
+  return (
+    <Card className="p-6">
+      <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Send size={18} /> Permohonan Cuti</h3>
+      <form onSubmit={handleLeaveSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-bold text-slate-500">Mula</label><input type="date" required className="w-full border rounded p-2 text-sm" value={newLeave.startDate} onChange={e => setNewLeave({...newLeave, startDate: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500">Tamat</label><input type="date" required className="w-full border rounded p-2 text-sm" value={newLeave.endDate} onChange={e => setNewLeave({...newLeave, endDate: e.target.value})} /></div></div>
+        {leaveDuration > 0 && (<div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">Jumlah Cuti: <b>{leaveDuration} Hari</b> (Tolak Ahad & Cuti Am)</div>)}
+        <div><label className="text-xs font-bold text-slate-500">Tujuan</label><textarea rows="2" placeholder="..." required className="w-full border rounded p-2 text-sm" value={newLeave.reason} onChange={e => setNewLeave({...newLeave, reason: e.target.value})} /></div>
+        <button className="w-full bg-slate-800 text-white py-2 rounded text-sm font-bold hover:bg-slate-900">Hantar</button>
+      </form>
+      <div className="mt-6 pt-4 border-t"><h4 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-2"><History size={14}/> Sejarah Cuti Saya</h4><div className="space-y-2 max-h-40 overflow-y-auto">{leaves.filter(l => l.userId === currentUser.id).map(l => (
+        <div key={l.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm"><div><span className="font-bold block">{l.startDate} - {l.endDate}</span> <span className="text-slate-500 text-xs italic">{l.reason} • {l.days} Hari</span></div><div className="flex items-center gap-2"><Badge status={l.status} />{(l.status === 'Pending' || l.status === 'Approved') && (<button type="button" onClick={() => handleWithdrawLeave(l.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Batalkan"><Trash2 size={16} /></button>)}</div></div>))}</div></div>
+    </Card>
+  );
+}
+
 // --- MAIN APP ---
-export default function UltramapLiveV18() {
+export default function UltramapLiveV21() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -213,7 +288,6 @@ export default function UltramapLiveV18() {
     if (!auth) return;
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Simple Query by email for demo
         const q = query(collection(db, "users"), where("email", "==", user.email));
         onSnapshot(q, (snapshot) => { if (!snapshot.empty) setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); });
       } else setCurrentUser(null);
@@ -228,26 +302,28 @@ export default function UltramapLiveV18() {
   const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Login Gagal: " + err.message); } };
   const handleLogout = () => signOut(auth);
   
-  // SEED DB FOR FIRST RUN
   const handleSeedData = async () => {
     if (!confirm("Adakah anda pasti? Ini akan masukkan data asal jika database kosong.")) return;
     try {
         await setDoc(doc(db, "settings", "global"), { customSubmissionDate: null });
         for (const u of SEED_USERS) {
             const q = query(collection(db, "users"), where("email", "==", u.email));
-            // Just add, no complex check for this simple seed script
-            await addDoc(collection(db, "users"), u);
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) { await addDoc(collection(db, "users"), u); }
         }
-        alert("Database seeded! Sila create akaun di Firebase Auth tab dengan email yang sama.");
+        alert("Database seeded! (Duplicates prevented). Sila create akaun di Firebase Auth tab dengan email yang sama.");
     } catch(e) {
         alert("Error seeding: " + e.message);
     }
   };
 
-  const toggleAttendanceDB = async (dateStr, userId, type) => {
-      const existing = attendance.find(a => a.date === dateStr && a.userId === userId);
-      if (existing) await deleteDoc(doc(db, "attendance", existing.id));
-      else await addDoc(collection(db, "attendance"), { date: dateStr, userId, type });
+  const toggleAttendanceDB = async (dateStr, userId, type, shouldDelete) => {
+      if (shouldDelete) {
+          const existing = attendance.find(a => a.date === dateStr && a.userId === userId);
+          if (existing) await deleteDoc(doc(db, "attendance", existing.id));
+      } else {
+          await addDoc(collection(db, "attendance"), { date: dateStr, userId, type });
+      }
   };
   const submitLeaveDB = async (leaveData) => { await addDoc(collection(db, "leaves"), leaveData); alert("Permohonan cuti dihantar!"); };
   const deleteLeaveDB = async (id) => { if(confirm("Padam?")) await deleteDoc(doc(db, "leaves", id)); };
