@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "firebase/auth";
-import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
-import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key } from 'lucide-react';
+import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
+import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key, History } from 'lucide-react';
 
-// --- 1. CONFIG FIREBASE (PASTIKAN TIADA ERROR DI SINI) ---
+// --- 1. CONFIG FIREBASE (PASTIKAN BETUL) ---
 const firebaseConfig = {
   apiKey: "AIzaSyD_1BO0kY9CpzselHNIG-NiuNbqitaywE8", 
   authDomain: "ultramap-hr.firebaseapp.com",
@@ -15,7 +15,6 @@ const firebaseConfig = {
   measurementId: "G-40VRCBXNL8"
 };
 
-// Initialize Firebase (Clean & Safe)
 let app, auth, db;
 try {
   app = initializeApp(firebaseConfig);
@@ -27,13 +26,14 @@ try {
 
 // --- DATA INITIAL ---
 const SEED_USERS = [
-  { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
-  { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
-  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
-  { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
+  { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
+  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'ADMIN', ic: '85xxxx-xx-xxxx', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
+  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'STAFF', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
+  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'STAFF', ic: '9xxxx-xx-xxxx', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
 ];
 
 const JOHOR_HOLIDAYS = [
+  { date: '2025-12-25', name: 'Hari Krismas' },
   { date: '2026-02-01', name: 'Hari Thaipusam' }, 
   { date: '2026-02-02', name: 'Cuti Hari Thaipusam' }, 
   { date: '2026-02-17', name: 'Tahun Baru Cina' }, 
@@ -56,7 +56,28 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
 
-// --- HELPER COMPONENTS ---
+// --- HELPER FUNCTIONS ---
+// Logic: Kira hari bekerja (Tolak Ahad & Cuti Am)
+const calculateLeaveDuration = (startDate, endDate) => {
+  if (!startDate || !endDate) return 0;
+  let count = 0;
+  let current = new Date(startDate);
+  const end = new Date(endDate);
+  
+  while (current <= end) {
+    const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+    const isSunday = current.getDay() === 0;
+    const isPublicHoliday = JOHOR_HOLIDAYS.some(h => h.date === dateStr);
+
+    if (!isSunday && !isPublicHoliday) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return count;
+};
+
+// --- COMPONENTS ---
 const Card = ({ children, className = "" }) => <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>{children}</div>;
 const Badge = ({ status }) => {
   const styles = { Pending: "bg-yellow-100 text-yellow-800 border-yellow-200", Approved: "bg-emerald-100 text-emerald-800 border-emerald-200", Rejected: "bg-red-100 text-red-800 border-red-200", Draft: "bg-gray-100 text-gray-500 border-gray-200", Submitted: "bg-blue-100 text-blue-800 border-blue-200" };
@@ -76,7 +97,7 @@ const UltramapLogo = () => (
   </svg>
 );
 
-// --- PAYSLIP (LANDSCAPE) ---
+// --- PAYSLIP ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
@@ -150,8 +171,8 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
         if (!attendance.some(a => a.date === dateStr && a.userId === targetUserId)) { if (!window.confirm("Hari ini Ahad. Confirm kerja Site?")) return; }
     }
     const existingIndex = attendance.findIndex(a => a.date === dateStr && a.userId === targetUserId);
-    if (existingIndex >= 0) setAttendance(dateStr, targetUserId, 'site', true); // True = Delete
-    else setAttendance(dateStr, targetUserId, 'site', false); // False = Add
+    if (existingIndex >= 0) setAttendance(dateStr, targetUserId, 'site', true); 
+    else setAttendance(dateStr, targetUserId, 'site', false); 
   };
 
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
@@ -189,6 +210,42 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   );
 };
 
+// --- BORANG CUTI & HISTORY ---
+const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
+  const [newLeave, setNewLeave] = useState({ startDate: '', endDate: '', type: 'AL', reason: '' });
+  const leaveDuration = calculateLeaveDuration(newLeave.startDate, newLeave.endDate);
+  const handleLeaveSubmit = (e) => { e.preventDefault(); setLeaves({ ...newLeave, id: Date.now(), userId: currentUser.id, status: 'Pending', days: leaveDuration }); setNewLeave({ startDate: '', endDate: '', type: 'AL', reason: '' }); };
+  const handleWithdrawLeave = (leaveId) => { if (window.confirm("Adakah anda pasti mahu membatalkan cuti ini?")) { deleteLeaveDB(leaveId); } };
+
+  return (
+    <Card className="p-6">
+      <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Send size={18} /> Permohonan Cuti</h3>
+      <form onSubmit={handleLeaveSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-bold text-slate-500">Mula</label><input type="date" required className="w-full border rounded p-2 text-sm" value={newLeave.startDate} onChange={e => setNewLeave({...newLeave, startDate: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500">Tamat</label><input type="date" required className="w-full border rounded p-2 text-sm" value={newLeave.endDate} onChange={e => setNewLeave({...newLeave, endDate: e.target.value})} /></div></div>
+        {leaveDuration > 0 && (<div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">Jumlah Cuti: <b>{leaveDuration} Hari</b> (Tolak Ahad & Cuti Am)</div>)}
+        <div><label className="text-xs font-bold text-slate-500">Tujuan</label><textarea rows="2" placeholder="..." required className="w-full border rounded p-2 text-sm" value={newLeave.reason} onChange={e => setNewLeave({...newLeave, reason: e.target.value})} /></div>
+        <button className="w-full bg-slate-800 text-white py-2 rounded text-sm font-bold hover:bg-slate-900">Hantar</button>
+      </form>
+      <div className="mt-6 pt-4 border-t">
+        <h4 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-2"><History size={14}/> Sejarah Cuti Saya</h4>
+        <div className="space-y-2 max-h-40 overflow-y-auto">{leaves.filter(l => l.userId === currentUser.id).map(l => (
+        <div key={l.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm">
+            <div>
+              <span className="font-bold block">{l.startDate} - {l.endDate}</span> 
+              <span className="text-slate-500 text-xs italic">{l.reason} • {l.days} Hari</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge status={l.status} />
+              {(l.status === 'Pending' || l.status === 'Approved') && (
+                <button type="button" onClick={() => handleWithdrawLeave(l.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Batalkan"><Trash2 size={16} /></button>
+              )}
+            </div>
+        </div>
+      ))}</div></div>
+    </Card>
+  );
+}
+
 // --- MAIN APP ---
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -225,23 +282,14 @@ export default function App() {
   const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Login Gagal: " + err.message); } };
   const handleLogout = () => signOut(auth);
   
-  // SEED DB FOR FIRST RUN - FIX DUPLICATE LOGIC
   const handleSeedData = async () => {
     if (!confirm("Adakah anda pasti? Ini akan masukkan data asal jika database kosong.")) return;
     try {
         await setDoc(doc(db, "settings", "global"), { customSubmissionDate: null });
-        
         for (const u of SEED_USERS) {
-            // CHECK IF USER EXISTS FIRST
             const q = query(collection(db, "users"), where("email", "==", u.email));
             const querySnapshot = await getDocs(q);
-            
-            if (querySnapshot.empty) {
-                await addDoc(collection(db, "users"), u);
-                console.log(`Added user: ${u.name}`);
-            } else {
-                console.log(`User already exists: ${u.name}`);
-            }
+            if (querySnapshot.empty) { await addDoc(collection(db, "users"), u); }
         }
         alert("Database seeded! (Duplicates prevented). Sila create akaun di Firebase Auth tab dengan email yang sama.");
     } catch(e) {
@@ -282,7 +330,6 @@ export default function App() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    // Use fallback to 0 or auto calculation if null
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
     const socso = (user.customSocso !== null && user.customSocso !== undefined) ? user.customSocso : (user.baseSalary * 0.005 + 5);
 
@@ -350,12 +397,31 @@ export default function App() {
                                     {currentUser.role === 'super_admin' && (
                                         <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-100 text-slate-500"><tr><th className="p-3">Nama</th><th className="p-3">Basic (RM)</th><th className="p-3">Cuti</th><th className="p-3">Edit</th></tr></thead><tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody></table></div></Card>
                                     )}
+                                    
+                                    {/* LEAVE BALANCE LIST (NEW FEATURE REQUEST) */}
+                                    <Card className="p-6">
+                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Users size={20}/> Senarai Baki Cuti Staff</h3>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {users.map(u => {
+                                                // Calculate approved leaves
+                                                const approvedDays = leaves.filter(l => l.userId === u.id && l.status === 'Approved').reduce((acc, curr) => acc + curr.days, 0);
+                                                const remaining = u.leaveBalance - approvedDays;
+                                                return (
+                                                    <div key={u.id} className="flex justify-between items-center text-sm border-b pb-1">
+                                                        <span className="font-bold text-slate-700">{u.nickname}</span>
+                                                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">Baki: {remaining} / {u.leaveBalance}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </Card>
+
                                     <Card className="p-6">
                                         <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><CheckCircle size={20}/> Pengesahan Cuti</h3>
                                         {leaves.filter(l => l.status === 'Pending').map(leave => (
                                             <div key={leave.id} className="p-3 border rounded bg-slate-50 mb-2">
                                                 <div className="flex justify-between"><span className="font-bold text-sm">{users.find(u => u.id === leave.userId)?.nickname}</span><Badge status="Pending"/></div>
-                                                <p className="text-xs text-slate-500 mt-1">{leave.startDate} - {leave.endDate} ({leave.days} Hari)</p>
+                                                <p className="text-xs text-slate-500 mt-1">{leave.startDate} - {leave.endDate} ({leave.days} Hari) : "{leave.reason}"</p>
                                                 <div className="flex gap-2 mt-2"><button onClick={() => approveLeaveDB(leave.id, 'Approved')} className="flex-1 bg-emerald-500 text-white text-xs py-1 rounded">Lulus</button><button onClick={() => approveLeaveDB(leave.id, 'Rejected')} className="flex-1 bg-red-500 text-white text-xs py-1 rounded">Tolak</button></div>
                                             </div>
                                         ))}
@@ -376,13 +442,8 @@ export default function App() {
                             )}
                         </div>
                         <div className="space-y-6">
-                            <Card className="p-6">
-                                <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Send size={18} /> Permohonan Cuti</h3>
-                                <form onSubmit={(e) => { e.preventDefault(); const form = e.target; submitLeaveDB({ userId: currentUser.id, startDate: form.start.value, endDate: form.end.value, reason: form.reason.value, status: 'Pending', days: 1 }); form.reset(); }} className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-bold text-slate-500">Mula</label><input name="start" type="date" required className="w-full border rounded p-2 text-sm" /></div><div><label className="text-xs font-bold text-slate-500">Tamat</label><input name="end" type="date" required className="w-full border rounded p-2 text-sm" /></div></div><div><label className="text-xs font-bold text-slate-500">Tujuan</label><textarea name="reason" rows="2" required className="w-full border rounded p-2 text-sm"></textarea></div><button className="w-full bg-slate-800 text-white py-2 rounded text-sm font-bold">Hantar</button>
-                                </form>
-                                <div className="mt-4 pt-4 border-t space-y-2">{leaves.filter(l => l.userId === currentUser.id).map(l => (<div key={l.id} className="flex justify-between items-center text-sm border-b pb-1"><span>{l.startDate} <span className="text-xs text-slate-400">({l.status})</span></span><button onClick={() => deleteLeaveDB(l.id)} className="text-red-500"><Trash2 size={14}/></button></div>))}</div>
-                            </Card>
+                            <LeaveForm currentUser={currentUser} leaves={leaves} setLeaves={submitLeaveDB} deleteLeaveDB={deleteLeaveDB} />
+                            
                             {(currentUser.role === 'super_admin' || currentUser.role === 'manager') && (
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-700 mb-4">Timesheet Staff</h3>
@@ -395,7 +456,7 @@ export default function App() {
             )}
             
             {editingUser && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6"><h3 className="font-bold text-lg mb-4">Edit: {editingUser.nickname}</h3><form onSubmit={(e) => { e.preventDefault(); updateUserDB(editingUser); }} className="space-y-3"><input type="number" className="border w-full p-2 mb-2" value={editingUser.baseSalary} onChange={e => setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} placeholder="Basic"/><input type="number" className="border w-full p-2 mb-2" value={editingUser.fixedAllowance} onChange={e => setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} placeholder="Allowance"/><input type="number" className="border w-full p-2 mb-2" value={editingUser.leaveBalance} onChange={e => setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} placeholder="Leave"/><div className="flex gap-2"><button type="button" onClick={() => setEditingUser(null)} className="flex-1 bg-slate-200 py-2 rounded">Cancel</button><button className="flex-1 bg-blue-600 text-white py-2 rounded">Save</button></div></form></Card></div>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6"><h3 className="font-bold text-lg mb-4">Edit: {editingUser.nickname}</h3><form onSubmit={(e) => { e.preventDefault(); updateUserDB(editingUser); }} className="space-y-3"><input type="number" className="border w-full p-2 mb-2" value={editingUser.baseSalary} onChange={e => setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} placeholder="Basic"/><input type="number" className="border w-full p-2 mb-2" value={editingUser.fixedAllowance} onChange={e => setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} placeholder="Allowance"/><input type="number" className="border w-full p-2 mb-2" value={editingUser.leaveBalance} onChange={e => setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} placeholder="Leave"/><div className="bg-slate-50 p-3 rounded border space-y-2"><p className="text-xs font-bold text-slate-700">Potongan Manual (Kosong = Auto)</p><div><label className="text-xs text-slate-500">KWSP (RM)</label><input type="number" className="w-full border p-2 rounded" placeholder="Auto (11%)" value={editingUser.customEpf || ''} onChange={e => setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div><div><label className="text-xs text-slate-500">SOCSO (RM)</label><input type="number" className="w-full border p-2 rounded" placeholder="Auto" value={editingUser.customSocso || ''} onChange={e => setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div></div><div className="flex gap-2"><button type="button" onClick={() => setEditingUser(null)} className="flex-1 bg-slate-200 py-2 rounded">Cancel</button><button className="flex-1 bg-blue-600 text-white py-2 rounded">Save</button></div></form></Card></div>
             )}
             {showPasswordModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-sm p-6"><h3 className="font-bold text-lg mb-4">Tukar Password</h3><form onSubmit={handleChangePassword} className="space-y-3"><div><label className="text-xs font-bold text-slate-500">Password Baru</label><input type="password" required className="w-full border p-2 rounded" onChange={e => setNewPasswordData({...newPasswordData, new: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500">Sahkan Password</label><input type="password" required className="w-full border p-2 rounded" onChange={e => setNewPasswordData({...newPasswordData, confirm: e.target.value})} /></div><div className="flex gap-2 pt-2"><button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 bg-slate-200 py-2 rounded">Batal</button><button className="flex-1 bg-blue-600 text-white py-2 rounded">Tukar</button></div></form></Card></div>
