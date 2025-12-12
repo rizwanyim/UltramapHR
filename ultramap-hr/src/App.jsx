@@ -38,7 +38,6 @@ const JOHOR_HOLIDAYS = [
   { date: '2025-07-28', name: 'Cuti Ganti (Hol Johor)' }, 
   { date: '2025-08-31', name: 'Hari Kebangsaan' },
   { date: '2025-12-25', name: 'Hari Krismas' },
-  { date: '2025-12-25', name: 'Hari Krismas' },
   { date: '2026-02-01', name: 'Hari Thaipusam' }, 
   { date: '2026-02-02', name: 'Cuti Hari Thaipusam' }, 
   { date: '2026-02-17', name: 'Tahun Baru Cina' }, 
