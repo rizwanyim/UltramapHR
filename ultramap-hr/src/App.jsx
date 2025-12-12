@@ -96,7 +96,7 @@ const UltramapLogo = () => (
   <img 
     src="/logo.png" 
     alt="ULTRAMAP SOLUTION" 
-    className="h-18 w-auto object-contain mx-auto lg:mx-0"
+    className="h-15 w-auto object-contain mx-auto lg:mx-0"
     onError={(e) => {
       e.target.style.display = 'none';
       e.target.parentNode.innerHTML = '<div class="text-center"><span class="font-bold text-red-600 text-xl tracking-tighter">ULTRA</span><span class="font-bold text-black text-xl tracking-tighter">MAP</span></div>'; 
