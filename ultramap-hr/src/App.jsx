@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "firebase/auth";
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
-import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key, History, Folder, FolderOpen } from 'lucide-react';
+import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key, History, FolderOpen, Folder } from 'lucide-react';
 
-// --- 1. CONFIG FIREBASE (DIPERBETULKAN) ---
+// --- 1. CONFIG FIREBASE ---
 const firebaseConfig = {
   apiKey: "AIzaSyD_1BO0kY9CpzselHNIG-NiuNbqitaywE8", 
   authDomain: "ultramap-hr.firebaseapp.com",
@@ -15,7 +15,6 @@ const firebaseConfig = {
   measurementId: "G-40VRCBXNL8"
 };
 
-// Initialize Firebase (Clean Initialization - No Duplicates)
 let app, auth, db;
 try {
   app = initializeApp(firebaseConfig);
@@ -27,13 +26,9 @@ try {
 
 // --- DATA INITIAL ---
 const SEED_USERS = [
-  // Admin 1
-  { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'MANAGER', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
-  // Admin 2
-  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
-  // Staff 1
+  { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'manager', position: 'MANAGER', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
+  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'project manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
   { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
-  // Staff 2
   { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
 ];
 
@@ -66,24 +61,31 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
 
+
 // --- HELPER FUNCTIONS ---
 const calculateLeaveDuration = (startDate, endDate) => {
   if (!startDate || !endDate) return 0;
   let count = 0;
   let current = new Date(startDate);
   const end = new Date(endDate);
-  
   while (current <= end) {
     const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
     const isSunday = current.getDay() === 0;
     const isPublicHoliday = JOHOR_HOLIDAYS.some(h => h.date === dateStr);
-
-    if (!isSunday && !isPublicHoliday) {
-      count++;
-    }
+    if (!isSunday && !isPublicHoliday) count++;
     current.setDate(current.getDate() + 1);
   }
   return count;
+};
+
+const getMonthList = () => {
+    const months = [];
+    const today = new Date();
+    for (let i = 0; i < 3; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        months.push(d);
+    }
+    return months;
 };
 
 // --- HELPER COMPONENTS ---
@@ -92,60 +94,71 @@ const Badge = ({ status }) => {
   const styles = { Pending: "bg-yellow-100 text-yellow-800 border-yellow-200", Approved: "bg-emerald-100 text-emerald-800 border-emerald-200", Rejected: "bg-red-100 text-red-800 border-red-200", Draft: "bg-gray-100 text-gray-500 border-gray-200", Submitted: "bg-blue-100 text-blue-800 border-blue-200" };
   return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${styles[status] || styles.Pending}`}>{status}</span>;
 };
-const UltramapLogo = () => (
+
+// --- LOGO COMPONENT (DINAMIK - BOLEH UBAH SAIZ) ---
+const UltramapLogo = ({ className = "h-10" }) => (
   <img 
     src="/logo.png" 
     alt="ULTRAMAP SOLUTION" 
-    className="h-15 w-auto object-contain mx-auto lg:mx-0"
+    className={`${className} w-auto object-contain`} 
     onError={(e) => {
       e.target.style.display = 'none';
-      e.target.parentNode.innerHTML = '<div class="text-center"><span class="font-bold text-red-600 text-xl tracking-tighter">ULTRA</span><span class="font-bold text-black text-xl tracking-tighter">MAP</span></div>'; 
+      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-xl">ULTRAMAP</span>'; 
     }}
   />
 );
 
-// --- PAYSLIP DESIGN (LANDSCAPE) ---
+// --- PAYSLIP DESIGN (LANDSCAPE A4) ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
   const netPay = totalEarnings - totalDeductions;
+
   return (
     <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen">
       <div className="bg-white shadow-2xl p-10 w-[297mm] min-h-[210mm] min-w-[297mm] text-black font-sans text-sm relative print:shadow-none print:w-full print:min-w-0 print:absolute print:top-0 print:left-0 print:m-0 print:landscape">
+        
+        {/* Header - LOGO BESAR (h-24) */}
         <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
-          <div><UltramapLogo /></div>
-          <div className="text-right"><p className="font-bold uppercase text-xs mb-1 text-slate-500">Private & Confidential</p><h2 className="text-xl font-bold text-slate-800 tracking-wide">ULTRAMAP SOLUTION</h2><p className="text-[10px] text-slate-400">Monthly Salary Slip</p></div>
+          <div><UltramapLogo className="h-24" /></div> 
+          <div className="text-right">
+            <p className="font-bold uppercase text-xs mb-1 text-slate-500">Private & Confidential</p>
+            <h2 className="text-xl font-bold text-slate-800 tracking-wide">ULTRAMAP SOLUTION</h2>
+            <p className="text-[10px] text-slate-400">Monthly Salary Slip</p>
+          </div>
         </div>
+
         <div className="grid grid-cols-4 gap-6 mb-8 border-b border-slate-300 pb-6">
           <div><span className="block font-bold text-slate-600 text-xs">NAME</span><span className="uppercase font-semibold text-base">{user.name}</span></div>
           <div><span className="block font-bold text-slate-600 text-xs">I/C NO</span><span className="font-mono text-base">{user.ic}</span></div>
           <div><span className="block font-bold text-slate-600 text-xs">JOB TITLE</span><span className="uppercase font-semibold text-base">{user.position}</span></div>
           <div className="text-right"><span className="block font-bold text-slate-600 text-xs">PAYSLIP FOR</span><span className="uppercase font-bold text-xl block">{data.month}</span></div>
         </div>
-        <div className="grid grid-cols-2 gap-16 mb-6">
+        
+        <div className="grid grid-cols-2 gap-16 mb-6 font-mono text-base">
           <div>
-            <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-base">Earnings (RM)</div>
-            <div className="space-y-3 text-base">
-              <div className="flex justify-between"><span>BASIC SALARY</span><span className="font-mono">{data.basicSalary.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>ALLOWANCE</span><span className="font-mono">{data.allowance.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span className="font-mono">{data.mealAllowance.toFixed(2)}</span></div>
-              <div className="flex justify-between text-slate-400"><span>OT ALLOWANCE</span><span className="font-mono">{data.otAllowance.toFixed(2)}</span></div>
-              <div className="flex justify-between text-slate-400"><span>BONUS</span><span className="font-mono">{data.bonus.toFixed(2)}</span></div>
+            <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider font-sans">Earnings (RM)</div>
+            <div className="space-y-3">
+              <div className="flex justify-between"><span>BASIC SALARY</span><span>{data.basicSalary.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>ALLOWANCE</span><span>{data.allowance.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span>{data.mealAllowance.toFixed(2)}</span></div>
+              <div className="flex justify-between text-slate-400"><span>OT ALLOWANCE</span><span>{data.otAllowance.toFixed(2)}</span></div>
+              <div className="flex justify-between text-slate-400"><span>BONUS</span><span>{data.bonus.toFixed(2)}</span></div>
             </div>
             <div className="border-t border-slate-300 mt-6 pt-2 flex justify-between font-bold text-lg"><span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span></div>
           </div>
           <div className="flex flex-col h-full">
             <div>
-                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-base">Deduction (RM)</div>
-                <div className="space-y-3 text-base">
-                <div className="flex justify-between"><span>EPF</span><span className="font-mono text-red-600">{data.epf.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>SOCSO</span><span className="font-mono text-red-600">{data.socso.toFixed(2)}</span></div>
+                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider font-sans">Deduction (RM)</div>
+                <div className="space-y-3">
+                <div className="flex justify-between"><span>EPF</span><span className="text-red-600">{data.epf.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>SOCSO</span><span className="text-red-600">{data.socso.toFixed(2)}</span></div>
                 </div>
             </div>
             <div className="border-t border-slate-300 mt-auto pt-2 flex justify-between font-bold text-lg text-slate-600"><span>TOTAL DEDUCTION</span><span>{totalDeductions.toFixed(2)}</span></div>
           </div>
         </div>
-        <div className="mt-12 bg-slate-100 border-y-4 border-slate-800 py-6 px-8 flex justify-between items-center"><span className="font-bold text-xl uppercase tracking-widest text-slate-700">NET PAY</span><span className="font-bold text-4xl text-slate-900">RM {netPay.toFixed(2)}</span></div>
+        <div className="mt-12 bg-slate-100 border-y-4 border-slate-800 py-6 px-8 flex justify-between items-center"><span className="font-bold text-xl uppercase tracking-widest text-slate-700">NET PAY</span><span className="font-bold text-4xl text-slate-900 font-mono">RM {netPay.toFixed(2)}</span></div>
         <div className="text-center text-[10px] text-slate-400 absolute bottom-8 left-0 right-0"><p>This monthly salary slip is electronically generated and does not require any signature.</p><p className="font-bold mt-1">ULTRAMAP SOLUTION (JM0876813-V)</p></div>
       </div>
     </div>
@@ -173,14 +186,18 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
 
   const handleToggle = (day) => {
     const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    if (JOHOR_HOLIDAYS.find(h => h.date === dateStr)) return;
+    const holidayInfo = JOHOR_HOLIDAYS.find(h => h.date === dateStr);
+    
     let isLocked = false;
     if (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) isLocked = true;
-    if (isAdminView || tsStatus.status === 'Submitted' || tsStatus.status === 'Approved') isLocked = true;
-    if (isLocked) { if (!isAdminView) alert("Tarikh ini dikunci."); return; }
-    const clickedDate = new Date(displayYear, displayMonth, day);
-    if (clickedDate.getDay() === 0) { 
-        if (!attendance.some(a => a.date === dateStr && a.userId === targetUserId)) { if (!window.confirm("Hari ini Ahad. Confirm kerja Site?")) return; }
+    if (!isAdminView && (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved')) isLocked = true;
+    if (isLocked && !isAdminView) { alert("Tarikh ini dikunci."); return; }
+
+    const isCurrentlySite = attendance.some(a => a.date === dateStr && a.userId === targetUserId);
+    if (!isCurrentlySite) {
+        if (holidayInfo) { if (!window.confirm(`Hari ini ${holidayInfo.name}. Confirm kerja Site?`)) return; }
+        const clickedDate = new Date(displayYear, displayMonth, day);
+        if (clickedDate.getDay() === 0) { if (!window.confirm("Hari ini Ahad. Confirm kerja Site?")) return; }
     }
     const existingIndex = attendance.findIndex(a => a.date === dateStr && a.userId === targetUserId);
     if (existingIndex >= 0) setAttendance(dateStr, targetUserId, 'site', true); 
@@ -215,9 +232,18 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             else if (isSite) btnClass = isVisualLock ? "bg-slate-400 text-white border-slate-500" : "bg-emerald-500 text-white shadow-md border-emerald-600";
             else if (isSunday) btnClass = "bg-slate-200 text-slate-400 border-slate-300";
             else if (isVisualLock) btnClass = "opacity-50 cursor-not-allowed bg-slate-50 text-slate-300";
-            return <button key={day} onClick={() => handleToggle(day)} disabled={isHoliday || (isVisualLock && !isSite)} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative ${btnClass}`}><span className="font-bold">{day}</span>{isSite && !isVisualLock && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}{isVisualLock && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}</button>;
+            return <button key={day} onClick={() => handleToggle(day)} disabled={isVisualLock && !isAdminView} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative ${btnClass}`}><span className="font-bold">{day}</span>{isSite && !isVisualLock && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}{isVisualLock && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}</button>;
       })}</div></div>
-      <div className="mt-auto flex justify-between items-center border-t pt-4"><div><p className="text-xs text-slate-500 uppercase font-bold">Total ({getMonthStr(displayDate)})</p><p className="text-xl font-bold text-emerald-600">{displayCount} <span className="text-[10px] font-normal text-slate-500">{countLabel}</span></p></div>{!isAdminView && !isPastCutoff && tsStatus.status !== 'Submitted' && tsStatus.status !== 'Approved' && (<button disabled={!canSubmit} onClick={canSubmit ? () => updateTimesheetStatus(targetUserId, 'Submitted') : undefined} className={`px-4 py-2 rounded font-bold text-xs shadow-lg transition-all ${canSubmit ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>{isSubmissionOpen ? "Hantar untuk Semakan" : `Hantar (Dibuka ${effectiveOpenDate}hb)`}</button>)}{isPastCutoff && <div className="text-right"><p className="text-[10px] text-slate-400 italic">{swipeIndex === 0 ? `1-${customSubmissionDate}hb Dikunci` : "Termasuk Baki"}</p></div>}</div>
+      <div className="mt-auto flex justify-between items-center border-t pt-4"><div><p className="text-xs text-slate-500 uppercase font-bold">Total ({getMonthStr(displayDate)})</p><p className="text-xl font-bold text-emerald-600">{displayCount} <span className="text-[10px] font-normal text-slate-500">{countLabel}</span></p></div>
+      {isAdminView ? (
+          <div className="flex gap-2">
+             <button onClick={() => updateTimesheetStatus(targetUserId, 'Rejected')} className="px-3 py-1 bg-red-100 text-red-600 rounded text-xs font-bold">Reject</button>
+             <button onClick={() => updateTimesheetStatus(targetUserId, 'Approved')} className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-bold shadow">Approve</button>
+          </div>
+      ) : (
+          !isPastCutoff && tsStatus.status !== 'Submitted' && tsStatus.status !== 'Approved' && (<button disabled={!canSubmit} onClick={canSubmit ? () => updateTimesheetStatus(targetUserId, 'Submitted') : undefined} className={`px-4 py-2 rounded font-bold text-xs shadow-lg transition-all ${canSubmit ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>{isSubmissionOpen ? "Hantar untuk Semakan" : `Hantar (Dibuka ${effectiveOpenDate}hb)`}</button>)
+      )}
+      {isPastCutoff && !isAdminView && <div className="text-right"><p className="text-[10px] text-slate-400 italic">{swipeIndex === 0 ? `1-${customSubmissionDate}hb Dikunci` : "Termasuk Baki"}</p></div>}</div>
     </Card>
   );
 };
@@ -326,7 +352,7 @@ const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
 }
 
 // --- MAIN APP ---
-export default function UltramapLiveV18() {
+export default function UltramapLiveV24() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -335,7 +361,7 @@ export default function UltramapLiveV18() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [viewedPayslip, setViewedPayslip] = useState(null);
-  const [currentDate] = useState(new Date()); 
+  const [currentDate] = useState(new Date(2025, 11, 9)); 
   const [hideSalary, setHideSalary] = useState(false);
   const [showAdminTimesheet, setShowAdminTimesheet] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -366,7 +392,6 @@ export default function UltramapLiveV18() {
     try {
         await setDoc(doc(db, "settings", "global"), { customSubmissionDate: null });
         for (const u of SEED_USERS) {
-            // CHECK IF USER EXISTS FIRST
             const q = query(collection(db, "users"), where("email", "==", u.email));
             const querySnapshot = await getDocs(q);
             if (querySnapshot.empty) { await addDoc(collection(db, "users"), u); }
@@ -444,12 +469,12 @@ export default function UltramapLiveV18() {
     return { month: monthStr, basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance, rolloverNote, otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance + mealAllowance - epf - socso) };
   };
 
-  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4"><Card className="w-full max-w-sm p-8 bg-white"><div className="flex justify-center mb-6"><UltramapLogo /></div><h2 className="text-center font-bold text-slate-800 mb-6">Log Masuk HR System</h2><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded" placeholder="nama@ultramap.com" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded" placeholder="******" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">Masuk</button></form><div className="mt-8 border-t pt-4 text-center"><button onClick={handleSeedData} className="text-xs text-slate-300 hover:text-slate-500 flex items-center justify-center gap-1 mx-auto"><Database size={12}/> Setup Database (First Run)</button></div></Card></div>;
+  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4"><Card className="w-full max-w-sm p-8 bg-white"><div className="flex justify-center mb-6"><UltramapLogo className="h-10" /></div><h2 className="text-center font-bold text-slate-800 mb-6">Log Masuk HR System</h2><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded" placeholder="nama@ultramap.com" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded" placeholder="******" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">Masuk</button></form><div className="mt-8 border-t pt-4 text-center"><button onClick={handleSeedData} className="text-xs text-slate-300 hover:text-slate-500 flex items-center justify-center gap-1 mx-auto"><Database size={12}/> Setup Database (First Run)</button></div></Card></div>;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
         <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-3"><UltramapLogo /></div>
+            <div className="flex items-center gap-3"><UltramapLogo className="h-10" /></div>
             <div className="flex items-center gap-3">
                 <span className="text-xs font-bold hidden md:block uppercase text-slate-500">{currentUser.nickname}</span>
                 <button onClick={() => setShowPasswordModal(true)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full"><Settings size={16}/></button>
@@ -482,7 +507,7 @@ export default function UltramapLiveV18() {
                                         </div>
                                     </Card>
                                     {currentUser.role === 'super_admin' && (
-                                        <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-100 text-slate-500"><tr><th className="p-3">Nama</th><th className="p-3">Gaji Kasar (RM)</th><th className="p-3">Elaun (RM)</th><th className="p-3">Cuti</th><th className="p-3">Edit</th></tr></thead><tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.fixedAllowance}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody></table></div></Card>
+                                        <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-100 text-slate-500"><tr><th className="p-3">Nama</th><th className="p-3">Basic (RM)</th><th className="p-3">Cuti</th><th className="p-3">Edit</th></tr></thead><tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody></table></div></Card>
                                     )}
                                     
                                     {/* LEAVE BALANCE LIST (NEW FEATURE REQUEST) */}
