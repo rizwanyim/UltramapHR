@@ -76,6 +76,16 @@ const calculateLeaveDuration = (startDate, endDate) => {
   return count;
 };
 
+const getMonthList = () => {
+    const months = [];
+    const today = new Date();
+    for (let i = 0; i < 3; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        months.push(d);
+    }
+    return months;
+};
+
 // --- HELPER COMPONENTS ---
 const Card = ({ children, className = "" }) => <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>{children}</div>;
 const Badge = ({ status }) => {
@@ -83,101 +93,19 @@ const Badge = ({ status }) => {
   return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${styles[status] || styles.Pending}`}>{status}</span>;
 };
 
-const UltramapLogo = () => (
+// --- LOGO COMPONENT (DINAMIK) ---
+// className boleh diubah ikut tempat (header vs payslip)
+const UltramapLogo = ({ className }) => (
   <img 
     src="/logo.png" 
     alt="ULTRAMAP SOLUTION" 
-    className="h-16 w-auto object-contain mx-auto lg:mx-0"
+    className={`${className} object-contain`} 
     onError={(e) => {
       e.target.style.display = 'none';
-      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl">ULTRAMAP</span>'; 
+      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-xl">ULTRAMAP</span>'; 
     }}
   />
 );
-
-// --- PAYSLIP LIST (FOLDER SYSTEM) ---
-const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus }) => {
-    const [selectedYear, setSelectedYear] = useState(2025); // Default open 2025
-
-    // Generate Month List Logic
-    const getAvailableMonths = (year) => {
-        const months = [];
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth(); // 0-11
-
-        if (year === 2025) {
-            // Requirement: "2025 masuk Dec je"
-            months.push(new Date(2025, 11, 1)); // Dec 2025
-        } else if (year === 2026) {
-            // Requirement: Jan to Dec, but check conditions
-            for (let i = 0; i < 12; i++) {
-                const d = new Date(2026, i, 1);
-                // Don't show future months
-                if (d > today) break;
-                
-                // For Staff: Check if Approved (Simulated check using current status for demo)
-                // In real app, you'd check historical status for each month.
-                // Here: If it's the current month, check approval. If past month, assume approved/generated.
-                if (currentUser.role === 'staff') {
-                   // If current viewing month matches real time month
-                   if (i === currentMonth && currentYear === 2026) {
-                        if (timesheetStatus.status !== 'Approved') continue; // Skip if not approved
-                   }
-                }
-                months.push(d);
-            }
-        }
-        return months;
-    };
-
-    const availableMonths = getAvailableMonths(selectedYear);
-
-    return (
-        <div className="mt-8 pt-8 border-t">
-            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2"><FileText size={20}/> Arkib Slip Gaji</h3>
-            
-            {/* Folder Tabs */}
-            <div className="flex gap-4 mb-4">
-                <button 
-                    onClick={() => setSelectedYear(2025)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2025 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}
-                >
-                    {selectedYear === 2025 ? <FolderOpen size={18}/> : <Folder size={18}/>}
-                    <span className="font-bold">2025</span>
-                </button>
-                <button 
-                    onClick={() => setSelectedYear(2026)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2026 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}
-                >
-                    {selectedYear === 2026 ? <FolderOpen size={18}/> : <Folder size={18}/>}
-                    <span className="font-bold">2026</span>
-                </button>
-            </div>
-
-            {/* File List */}
-            <div className="bg-slate-50 p-4 rounded-b-lg rounded-tr-lg border border-slate-200 min-h-[100px]">
-                {availableMonths.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {availableMonths.map((date, idx) => (
-                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group">
-                                <div className="flex items-center gap-2">
-                                    <FileText size={16} className="text-red-500"/>
-                                    <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600">{date.toLocaleDateString('ms-MY', { month: 'short' }).toUpperCase()}</span>
-                                </div>
-                                <Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
-                            </button>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center text-slate-400 py-4 text-xs italic">
-                        {selectedYear === 2026 ? "Tiada slip gaji atau Timesheet belum diluluskan." : "Tiada rekod."}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
 
 // --- PAYSLIP DESIGN (LANDSCAPE A4) ---
 const PayslipDesign = ({ data, user }) => {
@@ -188,20 +116,24 @@ const PayslipDesign = ({ data, user }) => {
   return (
     <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen">
       <div className="bg-white shadow-2xl p-10 w-[297mm] min-h-[210mm] min-w-[297mm] text-black font-sans text-sm relative print:shadow-none print:w-full print:min-w-0 print:absolute print:top-0 print:left-0 print:m-0 print:landscape">
+        
+        {/* Header - Logo Besar Di Sini */}
         <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
-          <div><UltramapLogo /></div>
+          <div><UltramapLogo className="h-24 w-auto" /></div>
           <div className="text-right">
             <p className="font-bold uppercase text-xs mb-1 text-slate-500">Private & Confidential</p>
             <h2 className="text-xl font-bold text-slate-800 tracking-wide">ULTRAMAP SOLUTION</h2>
             <p className="text-[10px] text-slate-400">Monthly Salary Slip</p>
           </div>
         </div>
+
         <div className="grid grid-cols-4 gap-6 mb-8 border-b border-slate-300 pb-6">
           <div><span className="block font-bold text-slate-600 text-xs">NAME</span><span className="uppercase font-semibold text-base">{user.name}</span></div>
           <div><span className="block font-bold text-slate-600 text-xs">I/C NO</span><span className="font-mono text-base">{user.ic}</span></div>
           <div><span className="block font-bold text-slate-600 text-xs">JOB TITLE</span><span className="uppercase font-semibold text-base">{user.position}</span></div>
           <div className="text-right"><span className="block font-bold text-slate-600 text-xs">PAYSLIP FOR</span><span className="uppercase font-bold text-xl block">{data.month}</span></div>
         </div>
+        
         <div className="grid grid-cols-2 gap-16 mb-6 font-mono text-base">
           <div>
             <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider font-sans">Earnings (RM)</div>
@@ -299,11 +231,8 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             else if (isSite) btnClass = isVisualLock ? "bg-slate-400 text-white border-slate-500" : "bg-emerald-500 text-white shadow-md border-emerald-600";
             else if (isSunday) btnClass = "bg-slate-200 text-slate-400 border-slate-300";
             else if (isVisualLock) btnClass = "opacity-50 cursor-not-allowed bg-slate-50 text-slate-300";
-            return <button key={day} onClick={() => handleToggle(day)} disabled={isHoliday || (isVisualLock && !isSite)} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative ${btnClass}`}><span className="font-bold">{day}</span>{isSite && !isVisualLock && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}{isVisualLock && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}</button>;
+            return <button key={day} onClick={() => handleToggle(day)} disabled={isVisualLock && !isAdminView} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative ${btnClass}`}><span className="font-bold">{day}</span>{isSite && !isVisualLock && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}{isVisualLock && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}</button>;
       })}</div></div>
-      
-      {activeHolidays.length > 0 && (<div className="mb-4 space-y-1">{activeHolidays.map((h, i) => (<div key={i} className="text-[10px] flex items-center gap-2 text-orange-700 bg-orange-50 px-2 py-1 rounded border border-orange-100"><span className="font-bold bg-orange-200 px-1 rounded text-orange-800">{new Date(h.date).getDate()}</span><span>{h.name}</span></div>))}</div>)}
-
       <div className="mt-auto flex justify-between items-center border-t pt-4"><div><p className="text-xs text-slate-500 uppercase font-bold">Total ({getMonthStr(displayDate)})</p><p className="text-xl font-bold text-emerald-600">{displayCount} <span className="text-[10px] font-normal text-slate-500">{countLabel}</span></p></div>
       {isAdminView ? (
           <div className="flex gap-2">
@@ -345,6 +274,61 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
     );
 };
 
+// --- PAYSLIP LIST (FOLDER SYSTEM) ---
+const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus }) => {
+    const [selectedYear, setSelectedYear] = useState(2025); 
+
+    const getAvailableMonths = (year) => {
+        const months = [];
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth(); 
+
+        if (year === 2025) {
+            // Only Dec 2025
+            months.push(new Date(2025, 11, 1)); 
+        } else if (year === 2026) {
+            for (let i = 0; i < 12; i++) {
+                const d = new Date(2026, i, 1);
+                if (d > today) break;
+                // For Staff, only show if Approved OR current month not ended
+                if (currentUser.role === 'staff') {
+                   if (i === currentMonth && currentYear === 2026 && timesheetStatus.status !== 'Approved') continue;
+                }
+                months.push(d);
+            }
+        }
+        return months;
+    };
+
+    const availableMonths = getAvailableMonths(selectedYear);
+
+    return (
+        <div className="mt-8 pt-8 border-t">
+            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2"><FileText size={20}/> Arkib Slip Gaji</h3>
+            <div className="flex gap-4 mb-4">
+                <button onClick={() => setSelectedYear(2025)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2025 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
+                    {selectedYear === 2025 ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">2025</span>
+                </button>
+                <button onClick={() => setSelectedYear(2026)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2026 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
+                    {selectedYear === 2026 ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">2026</span>
+                </button>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-b-lg rounded-tr-lg border border-slate-200 min-h-[100px]">
+                {availableMonths.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {availableMonths.map((date, idx) => (
+                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group">
+                                <div className="flex items-center gap-2"><FileText size={16} className="text-red-500"/><span className="text-sm font-bold text-slate-700 group-hover:text-blue-600">{date.toLocaleDateString('ms-MY', { month: 'short' }).toUpperCase()}</span></div><Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
+                            </button>
+                        ))}
+                    </div>
+                ) : <div className="text-center text-slate-400 py-4 text-xs italic">Tiada rekod.</div>}
+            </div>
+        </div>
+    );
+};
+
 // --- BORANG CUTI ---
 const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
   const [newLeave, setNewLeave] = useState({ startDate: '', endDate: '', type: 'AL', reason: '' });
@@ -368,7 +352,7 @@ const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
 }
 
 // --- MAIN APP ---
-export default function UltramapLiveV23() {
+export default function UltramapLiveV24() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -434,9 +418,6 @@ export default function UltramapLiveV23() {
   
   const updateTimesheetStatusDB = async (userId, status) => {
       // Find existing status doc for this month or create new
-      // Note: For simplicity in this demo we use local state logic mapped to DB, 
-      // but ideally you'd have a 'timesheets' collection. 
-      // Here we assume basic flow.
       alert("Status dikemaskini: " + status);
   };
 
@@ -525,24 +506,6 @@ export default function UltramapLiveV23() {
                                     {currentUser.role === 'super_admin' && (
                                         <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-100 text-slate-500"><tr><th className="p-3">Nama</th><th className="p-3">Gaji Kasar (RM)</th><th className="p-3">Elaun (RM)</th><th className="p-3">Cuti</th><th className="p-3">Edit</th></tr></thead><tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.fixedAllowance}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody></table></div></Card>
                                     )}
-                                    
-                                    {/* LEAVE BALANCE LIST (NEW FEATURE REQUEST) */}
-                                    <Card className="p-6">
-                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Users size={20}/> Senarai Baki Cuti Staff</h3>
-                                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                                            {users.map(u => {
-                                                const approvedDays = leaves.filter(l => l.userId === u.id && l.status === 'Approved').reduce((acc, curr) => acc + curr.days, 0);
-                                                const remaining = u.leaveBalance - approvedDays;
-                                                return (
-                                                    <div key={u.id} className="flex justify-between items-center text-sm border-b pb-1">
-                                                        <span className="font-bold text-slate-700">{u.nickname}</span>
-                                                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">Baki: {remaining} / {u.leaveBalance}</span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </Card>
-
                                     <Card className="p-6">
                                         <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><CheckCircle size={20}/> Pengesahan Cuti</h3>
                                         {leaves.filter(l => l.status === 'Pending').map(leave => (
@@ -571,10 +534,11 @@ export default function UltramapLiveV23() {
                         </div>
                         <div className="space-y-6">
                             {(currentUser.role === 'staff') && <LeaveForm currentUser={currentUser} leaves={leaves} setLeaves={submitLeaveDB} deleteLeaveDB={deleteLeaveDB} />}
+                            
                             {(currentUser.role === 'super_admin' || currentUser.role === 'manager') && (
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-700 mb-4">Timesheet Staff</h3>
-                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={{status: 'Draft'}} updateTimesheetStatus={()=>{}} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-blue-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak & Luluskan</button>)}</Card>))}</div>
+                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={{status: 'Draft'}} updateTimesheetStatus={()=>{}} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-blue-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak</button>)}</Card>))}</div>
                                 </div>
                             )}
                         </div>
