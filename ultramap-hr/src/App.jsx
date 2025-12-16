@@ -26,10 +26,10 @@ try {
 
 // --- DATA INITIAL ---
 const SEED_USERS = [
-  { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'manager', position: 'MANAGER', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
-  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
-  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
-  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
+  { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
+  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'ADMIN', ic: '85xxxx-xx-xxxx', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
+  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'STAFF', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
+  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'STAFF', ic: '9xxxx-xx-xxxx', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
 ];
 
 const JOHOR_HOLIDAYS = [
@@ -39,28 +39,9 @@ const JOHOR_HOLIDAYS = [
   { date: '2025-08-31', name: 'Hari Kebangsaan' },
   { date: '2025-12-25', name: 'Hari Krismas' },
   // 2026
-  { date: '2026-02-01', name: 'Hari Thaipusam' }, 
-  { date: '2026-02-02', name: 'Cuti Hari Thaipusam' }, 
-  { date: '2026-02-17', name: 'Tahun Baru Cina' }, 
-  { date: '2026-02-18', name: 'Tahun Baru Cina Hari Kedua' },
-  { date: '2026-02-19', name: 'Awal Ramadan' },
-  { date: '2026-03-21', name: 'Hari Raya Aidilfitri' }, 
-  { date: '2026-03-22', name: 'Hari Raya Aidilfitri Hari Kedua' }, 
-  { date: '2026-03-23', name: 'Hari Keputeraan Sultan Johor' }, 
-  { date: '2026-05-01', name: 'Hari Pekerja' },
-  { date: '2026-05-27', name: 'Hari Raya Haji' },
-  { date: '2026-05-31', name: 'Hari Wesak' }, 
-  { date: '2026-06-01', name: 'Hari Keputeraan YDP Agong' }, 
-  { date: '2026-06-17', name: 'Awal Muharram' }, 
-  { date: '2026-07-21', name: 'Hari Hol Almarhum Sultan Iskandar' },
-  { date: '2026-08-25', name: 'Maulidur Rasul' },
-  { date: '2026-08-31', name: 'Hari Kebangsaan' }, 
-  { date: '2026-09-16', name: 'Hari Malaysia' }, 
-  { date: '2026-11-08', name: 'Hari Deepavali' }, 
-  { date: '2026-11-09', name: 'Cuti Hari Deepavali' },
-  { date: '2026-12-25', name: 'Hari Krismas' },
+  { date: '2026-02-01', name: 'Hari Thaipusam' },
+  { date: '2026-02-17', name: 'Tahun Baru Cina' },
 ];
-
 
 // --- HELPER FUNCTIONS ---
 const calculateLeaveDuration = (startDate, endDate) => {
@@ -79,6 +60,7 @@ const calculateLeaveDuration = (startDate, endDate) => {
 };
 
 const getMonthList = () => {
+    // Generate list of last 3 months for payslip history
     const months = [];
     const today = new Date();
     for (let i = 0; i < 3; i++) {
@@ -95,15 +77,14 @@ const Badge = ({ status }) => {
   return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${styles[status] || styles.Pending}`}>{status}</span>;
 };
 
-// --- LOGO COMPONENT (DINAMIK - BOLEH UBAH SAIZ) ---
-const UltramapLogo = ({ className = "h-10" }) => (
+const UltramapLogo = () => (
   <img 
     src="/logo.png" 
     alt="ULTRAMAP SOLUTION" 
-    className={`${className} w-auto object-contain`} 
+    className="h-24 w-auto object-contain mx-auto lg:mx-0" // Besar sikit (h-24)
     onError={(e) => {
       e.target.style.display = 'none';
-      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-xl">ULTRAMAP</span>'; 
+      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl">ULTRAMAP</span>'; 
     }}
   />
 );
@@ -120,7 +101,7 @@ const PayslipDesign = ({ data, user }) => {
         
         {/* Header - LOGO BESAR (h-24) */}
         <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
-          <div><UltramapLogo className="h-24" /></div> 
+          <div><UltramapLogo /></div>
           <div className="text-right">
             <p className="font-bold uppercase text-xs mb-1 text-slate-500">Private & Confidential</p>
             <h2 className="text-xl font-bold text-slate-800 tracking-wide">ULTRAMAP SOLUTION</h2>
@@ -135,7 +116,7 @@ const PayslipDesign = ({ data, user }) => {
           <div className="text-right"><span className="block font-bold text-slate-600 text-xs">PAYSLIP FOR</span><span className="uppercase font-bold text-xl block">{data.month}</span></div>
         </div>
         
-        <div className="grid grid-cols-2 gap-16 mb-6 font-mono text-base">
+        <div className="grid grid-cols-2 gap-16 mb-6 font-mono text-base"> {/* Use Mono Font */}
           <div>
             <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider font-sans">Earnings (RM)</div>
             <div className="space-y-3">
@@ -177,6 +158,11 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   const autoLastDay = getLastDayOfMonth(currentDate);
   const effectiveOpenDate = customSubmissionDate ? customSubmissionDate : autoLastDay;
   const isSubmissionOpen = currentDate.getDate() >= effectiveOpenDate;
+  
+  // LOGIC APPROVAL STAFF
+  // Staff boleh hantar jika:
+  // 1. Hari ni >= Tarikh Cutoff
+  // 2. Status belum Approved (boleh resubmit kalau Rejected/Draft)
   const canSubmit = isSubmissionOpen && (tsStatus.status === 'Draft' || tsStatus.status === 'Rejected');
   
   const activeHolidays = JOHOR_HOLIDAYS.filter(h => {
@@ -191,9 +177,11 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
     let isLocked = false;
     if (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) isLocked = true;
     if (!isAdminView && (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved')) isLocked = true;
+    
     if (isLocked && !isAdminView) { alert("Tarikh ini dikunci."); return; }
 
     const isCurrentlySite = attendance.some(a => a.date === dateStr && a.userId === targetUserId);
+    
     if (!isCurrentlySite) {
         if (holidayInfo) { if (!window.confirm(`Hari ini ${holidayInfo.name}. Confirm kerja Site?`)) return; }
         const clickedDate = new Date(displayYear, displayMonth, day);
@@ -218,9 +206,28 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
       displayCount = attendance.filter(a => new Date(a.date).getMonth() === displayMonth && a.userId === targetUserId).length;
   }
 
+  // --- ADMIN APPROVAL HANDLER (WITH CONFIRMATION) ---
+  const handleAdminAction = (action) => {
+      // In a real app we might check dates, but Admin usually has override power.
+      updateTimesheetStatus(targetUserId, action);
+  }
+
   return (
     <Card className="p-6">
-      <div className="flex justify-between items-center mb-6"><h3 className="font-bold text-lg flex items-center gap-2 text-slate-700"><Calendar size={20} /> Timesheet</h3>{isPastCutoff ? (<div className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200"><button onClick={() => setSwipeIndex(0)} className={`p-1.5 rounded-full ${swipeIndex === 0 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronLeft size={16} /></button><span className="text-[10px] font-bold px-3 text-slate-600 uppercase min-w-[80px] text-center">{getMonthStr(displayDate)}</span><button onClick={() => setSwipeIndex(1)} className={`p-1.5 rounded-full ${swipeIndex === 1 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronRight size={16} /></button></div>) : <Badge status={tsStatus.status} />}</div>
+      <div className="flex justify-between items-center mb-6">
+          <h3 className="font-bold text-lg flex items-center gap-2 text-slate-700"><Calendar size={20} /> Timesheet</h3>
+          {isPastCutoff ? (<div className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200"><button onClick={() => setSwipeIndex(0)} className={`p-1.5 rounded-full ${swipeIndex === 0 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronLeft size={16} /></button><span className="text-[10px] font-bold px-3 text-slate-600 uppercase min-w-[80px] text-center">{getMonthStr(displayDate)}</span><button onClick={() => setSwipeIndex(1)} className={`p-1.5 rounded-full ${swipeIndex === 1 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronRight size={16} /></button></div>) : <Badge status={tsStatus.status} />}
+      </div>
+      
+      {/* SHOW APPROVER NAME IF APPROVED */}
+      {tsStatus.approvedBy && (
+          <div className="mb-2 flex justify-end">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded flex items-center gap-1">
+                 Disahkan oleh: <b>{tsStatus.approvedBy}</b>
+              </span>
+          </div>
+      )}
+
       <div className="mb-4"><div className="grid grid-cols-7 gap-1">{['A','I','S','R','K','J','S'].map(d => (<div key={d} className="text-center text-[10px] font-bold text-slate-400 mb-1">{d}</div>))}{emptySlots.map((_, i) => <div key={`empty-${i}`}></div>)}{dayArray.map(day => {
             const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const isSite = attendance.some(a => a.date === dateStr && a.userId === targetUserId && a.type === 'site');
@@ -232,13 +239,20 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             else if (isSite) btnClass = isVisualLock ? "bg-slate-400 text-white border-slate-500" : "bg-emerald-500 text-white shadow-md border-emerald-600";
             else if (isSunday) btnClass = "bg-slate-200 text-slate-400 border-slate-300";
             else if (isVisualLock) btnClass = "opacity-50 cursor-not-allowed bg-slate-50 text-slate-300";
+            
+            // Override visual for active site even if holiday
+            if(isSite && !isVisualLock) btnClass = "bg-emerald-500 text-white shadow-md border-emerald-600";
+
             return <button key={day} onClick={() => handleToggle(day)} disabled={isVisualLock && !isAdminView} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative ${btnClass}`}><span className="font-bold">{day}</span>{isSite && !isVisualLock && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}{isVisualLock && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}</button>;
       })}</div></div>
+      
+      {activeHolidays.length > 0 && (<div className="mb-4 space-y-1">{activeHolidays.map((h, i) => (<div key={i} className="text-[10px] flex items-center gap-2 text-orange-700 bg-orange-50 px-2 py-1 rounded border border-orange-100"><span className="font-bold bg-orange-200 px-1 rounded text-orange-800">{new Date(h.date).getDate()}</span><span>{h.name}</span></div>))}</div>)}
+
       <div className="mt-auto flex justify-between items-center border-t pt-4"><div><p className="text-xs text-slate-500 uppercase font-bold">Total ({getMonthStr(displayDate)})</p><p className="text-xl font-bold text-emerald-600">{displayCount} <span className="text-[10px] font-normal text-slate-500">{countLabel}</span></p></div>
       {isAdminView ? (
           <div className="flex gap-2">
-             <button onClick={() => updateTimesheetStatus(targetUserId, 'Rejected')} className="px-3 py-1 bg-red-100 text-red-600 rounded text-xs font-bold">Reject</button>
-             <button onClick={() => updateTimesheetStatus(targetUserId, 'Approved')} className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-bold shadow">Approve</button>
+             <button onClick={() => handleAdminAction('Rejected')} className="px-3 py-1 bg-red-100 text-red-600 rounded text-xs font-bold hover:bg-red-200">Reject</button>
+             <button onClick={() => handleAdminAction('Approved')} className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-bold shadow hover:bg-emerald-700">Approve</button>
           </div>
       ) : (
           !isPastCutoff && tsStatus.status !== 'Submitted' && tsStatus.status !== 'Approved' && (<button disabled={!canSubmit} onClick={canSubmit ? () => updateTimesheetStatus(targetUserId, 'Submitted') : undefined} className={`px-4 py-2 rounded font-bold text-xs shadow-lg transition-all ${canSubmit ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>{isSubmissionOpen ? "Hantar untuk Semakan" : `Hantar (Dibuka ${effectiveOpenDate}hb)`}</button>)
@@ -275,55 +289,21 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
 };
 
 // --- PAYSLIP LIST (FOLDER SYSTEM) ---
-const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus }) => {
-    const [selectedYear, setSelectedYear] = useState(2025); 
-
-    const getAvailableMonths = (year) => {
-        const months = [];
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth(); 
-
-        if (year === 2025) {
-            // Only Dec 2025
-            months.push(new Date(2025, 11, 1)); 
-        } else if (year === 2026) {
-            for (let i = 0; i < 12; i++) {
-                const d = new Date(2026, i, 1);
-                if (d > today) break;
-                // For Staff, only show if Approved OR current month not ended
-                if (currentUser.role === 'staff') {
-                   if (i === currentMonth && currentYear === 2026 && timesheetStatus.status !== 'Approved') continue;
-                }
-                months.push(d);
-            }
-        }
-        return months;
-    };
-
-    const availableMonths = getAvailableMonths(selectedYear);
-
+const PayslipList = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus }) => {
+    const months = getMonthList();
     return (
         <div className="mt-8 pt-8 border-t">
-            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2"><FileText size={20}/> Arkib Slip Gaji</h3>
-            <div className="flex gap-4 mb-4">
-                <button onClick={() => setSelectedYear(2025)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2025 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
-                    {selectedYear === 2025 ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">2025</span>
-                </button>
-                <button onClick={() => setSelectedYear(2026)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2026 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
-                    {selectedYear === 2026 ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">2026</span>
-                </button>
-            </div>
-            <div className="bg-slate-50 p-4 rounded-b-lg rounded-tr-lg border border-slate-200 min-h-[100px]">
-                {availableMonths.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {availableMonths.map((date, idx) => (
-                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group">
-                                <div className="flex items-center gap-2"><FileText size={16} className="text-red-500"/><span className="text-sm font-bold text-slate-700 group-hover:text-blue-600">{date.toLocaleDateString('ms-MY', { month: 'short' }).toUpperCase()}</span></div><Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
-                            </button>
-                        ))}
-                    </div>
-                ) : <div className="text-center text-slate-400 py-4 text-xs italic">Tiada rekod.</div>}
+            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2"><FileText size={20}/> Sejarah Slip Gaji</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {months.map((date, idx) => (
+                    <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group">
+                        <div className="flex items-center gap-2">
+                            <FileText size={16} className="text-red-500"/>
+                            <span className="text-sm font-bold text-slate-600 group-hover:text-blue-600">{date.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()}</span>
+                        </div>
+                        <Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
+                    </button>
+                ))}
             </div>
         </div>
     );
@@ -345,23 +325,43 @@ const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
         <div><label className="text-xs font-bold text-slate-500">Tujuan</label><textarea rows="2" placeholder="..." required className="w-full border rounded p-2 text-sm" value={newLeave.reason} onChange={e => setNewLeave({...newLeave, reason: e.target.value})} /></div>
         <button className="w-full bg-slate-800 text-white py-2 rounded text-sm font-bold hover:bg-slate-900">Hantar</button>
       </form>
-      <div className="mt-6 pt-4 border-t"><h4 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-2"><History size={14}/> Sejarah Cuti Saya</h4><div className="space-y-2 max-h-40 overflow-y-auto">{leaves.filter(l => l.userId === currentUser.id).map(l => (
-        <div key={l.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm"><div><span className="font-bold block">{l.startDate} - {l.endDate}</span> <span className="text-slate-500 text-xs italic">{l.reason} • {l.days} Hari</span></div><div className="flex items-center gap-2"><Badge status={l.status} />{(l.status === 'Pending' || l.status === 'Approved') && (<button type="button" onClick={() => handleWithdrawLeave(l.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Batalkan"><Trash2 size={16} /></button>)}</div></div>))}</div></div>
+      
+      {/* HISTORY CUTI DI BAWAH BORANG */}
+      <div className="mt-6 pt-4 border-t">
+        <h4 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-2"><History size={14}/> Sejarah Cuti Saya</h4>
+        <div className="space-y-2 max-h-40 overflow-y-auto">{leaves.filter(l => l.userId === currentUser.id).map(l => (
+        <div key={l.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm">
+            <div>
+              <span className="font-bold block">{l.startDate} - {l.endDate}</span> 
+              <span className="text-slate-500 text-xs italic">{l.reason} • {l.days} Hari</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge status={l.status} />
+              {(l.status === 'Pending' || l.status === 'Approved') && (
+                <button type="button" onClick={() => handleWithdrawLeave(l.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Batalkan"><Trash2 size={16} /></button>
+              )}
+            </div>
+        </div>
+      ))}</div></div>
     </Card>
   );
 }
 
 // --- MAIN APP ---
-export default function UltramapLiveV24() {
+export default function UltramapLiveV23() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [leaves, setLeaves] = useState([]);
+  const [timesheets, setTimesheets] = useState([]);
   const [settings, setSettings] = useState({ customSubmissionDate: null });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [viewedPayslip, setViewedPayslip] = useState(null);
-  const [currentDate] = useState(new Date(2025, 11, 9)); 
+  
+  // 1. REAL TIME DATE DEFAULT
+  const [currentDate] = useState(new Date()); 
+  
   const [hideSalary, setHideSalary] = useState(false);
   const [showAdminTimesheet, setShowAdminTimesheet] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -380,8 +380,9 @@ export default function UltramapLiveV24() {
     const unsubUsers = onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubAtt = onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubLeaves = onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
+    const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubSettings = onSnapshot(doc(db, "settings", "global"), (s) => { if(s.exists()) setSettings(s.data()); });
-    return () => { unsubscribeAuth(); unsubUsers(); unsubAtt(); unsubLeaves(); unsubSettings(); };
+    return () => { unsubscribeAuth(); unsubUsers(); unsubAtt(); unsubLeaves(); unsubTS(); unsubSettings(); };
   }, []);
 
   const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Login Gagal: " + err.message); } };
@@ -412,16 +413,38 @@ export default function UltramapLiveV24() {
   };
   const submitLeaveDB = async (leaveData) => { await addDoc(collection(db, "leaves"), leaveData); alert("Permohonan cuti dihantar!"); };
   const deleteLeaveDB = async (id) => { if(confirm("Padam?")) await deleteDoc(doc(db, "leaves", id)); };
-  const approveLeaveDB = async (id, status) => { await updateDoc(doc(db, "leaves", id), { status }); };
+  const approveLeaveDB = async (id, status) => { 
+      await updateDoc(doc(db, "leaves", id), { 
+          status, 
+          approvedBy: currentUser.nickname 
+      }); 
+  };
   const updateSettingsDB = async (val) => { await updateDoc(doc(db, "settings", "global"), { customSubmissionDate: val }); };
   const updateUserDB = async (u) => { await updateDoc(doc(db, "users", u.id), { baseSalary: u.baseSalary, fixedAllowance: u.fixedAllowance, customEpf: u.customEpf, customSocso: u.customSocso, leaveBalance: u.leaveBalance }); setEditingUser(null); alert("Data Staff Dikemaskini"); };
   
   const updateTimesheetStatusDB = async (userId, status) => {
-      // Find existing status doc for this month or create new
-      // Note: For simplicity in this demo we use local state logic mapped to DB, 
-      // but ideally you'd have a 'timesheets' collection. 
-      // Here we assume basic flow.
-      alert("Status dikemaskini: " + status);
+      const monthStr = currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
+      const existing = timesheets.find(t => t.userId === userId && t.month === monthStr);
+      
+      if (existing) {
+          await updateDoc(doc(db, "timesheets", existing.id), { 
+              status, 
+              approvedBy: status === 'Approved' ? currentUser.nickname : null 
+          });
+      } else {
+          await addDoc(collection(db, "timesheets"), { 
+              userId, 
+              month: monthStr, 
+              status, 
+              approvedBy: status === 'Approved' ? currentUser.nickname : null 
+          });
+      }
+  };
+
+  // Helper to get status from DB state
+  const getTimesheetStatusFromDB = (userId) => {
+      const monthStr = currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
+      return timesheets.find(t => t.userId === userId && t.month === monthStr) || { userId, month: monthStr, status: 'Draft' };
   };
 
   const handleChangePassword = async (e) => {
@@ -443,6 +466,7 @@ export default function UltramapLiveV24() {
     const year = forMonthDate.getFullYear();
     const month = forMonthDate.getMonth();
     
+    // Use fallback to 0 or auto calculation if null
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
     const socso = (user.customSocso !== null && user.customSocso !== undefined) ? user.customSocso : (user.baseSalary * 0.005 + 5);
 
@@ -507,7 +531,7 @@ export default function UltramapLiveV24() {
                                         </div>
                                     </Card>
                                     {currentUser.role === 'super_admin' && (
-                                        <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-100 text-slate-500"><tr><th className="p-3">Nama</th><th className="p-3">Basic (RM)</th><th className="p-3">Cuti</th><th className="p-3">Edit</th></tr></thead><tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody></table></div></Card>
+                                        <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-100 text-slate-500"><tr><th className="p-3">Nama</th><th className="p-3">Gaji Pokok (RM)</th><th className="p-3">Elaun (RM)</th><th className="p-3">Cuti (Hari)</th><th className="p-3">Edit</th></tr></thead><tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.fixedAllowance}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody></table></div></Card>
                                     )}
                                     
                                     {/* LEAVE BALANCE LIST (NEW FEATURE REQUEST) */}
@@ -547,8 +571,8 @@ export default function UltramapLiveV24() {
                                     customSubmissionDate={settings.customSubmissionDate} 
                                     attendance={attendance} 
                                     setAttendance={toggleAttendanceDB} 
-                                    tsStatus={{ status: 'Draft' }} 
-                                    updateTimesheetStatus={()=>{}} 
+                                    tsStatus={getTimesheetStatusFromDB(currentUser.id)} 
+                                    updateTimesheetStatus={updateTimesheetStatusDB} 
                                     isAdminView={false} 
                                 />
                             )}
@@ -559,12 +583,12 @@ export default function UltramapLiveV24() {
                             {(currentUser.role === 'super_admin' || currentUser.role === 'manager') && (
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-700 mb-4">Timesheet Staff</h3>
-                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={{status: 'Draft'}} updateTimesheetStatus={()=>{}} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-blue-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak</button>)}</Card>))}</div>
+                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-blue-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak</button>)}</Card>))}</div>
                                 </div>
                             )}
                         </div>
                     </div>
-                    <PayslipFolderSystem currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} timesheetStatus={{status: 'Approved'}} />
+                    <PayslipList currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} />
                 </div>
             )}
             
