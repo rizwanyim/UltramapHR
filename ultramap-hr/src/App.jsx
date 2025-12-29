@@ -143,7 +143,7 @@ const PayslipDesign = ({ data, user }) => {
             <div className="space-y-3 w-1/2">
                 <div className="grid grid-cols-[100px_1fr]">
                     <span className="font-bold text-slate-600 text-xs self-center">NAME</span>
-                    <span className="uppercase font-bold text-base truncate">{user.name}</span>
+                    <span className="uppercase font-semibold text-base">{user.name}</span>
                 </div>
                 <div className="grid grid-cols-[100px_1fr]">
                     <span className="font-bold text-slate-600 text-xs self-center">I/C NO</span>
@@ -160,7 +160,7 @@ const PayslipDesign = ({ data, user }) => {
                 </div>
                 <div className="grid grid-cols-[100px_1fr]">
                     <span className="font-bold text-slate-600 text-xs self-center">PAYSLIP FOR</span>
-                    <span className="uppercase font-bold text-lg">{data.month}</span>
+                    <span className="uppercase font-semibold text-base">{data.month}</span>
                 </div>
             </div>
         </div>
@@ -202,7 +202,7 @@ const PayslipDesign = ({ data, user }) => {
         {/* 6. FIX: Net Pay Font & Size (Regular Font, Smaller Size) */}
         <div className="mt-4 bg-slate-100 border-y-4 border-slate-800 py-4 px-8 flex justify-between items-center">
           <span className="font-bold text-lg uppercase tracking-widest text-slate-700">NET PAY</span>
-          <span className="font-bold text-3xl text-slate-900 font-sans">RM {netPay.toFixed(2)}</span>
+          <span className="font-bold text-2xl text-slate-900 font-sans">RM {netPay.toFixed(2)}</span>
         </div>
 
         {/* 2. FIX: Footer Position & Text Wrapping */}
