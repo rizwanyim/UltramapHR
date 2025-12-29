@@ -106,23 +106,26 @@ const UltramapLogo = ({ className = "h-10" }) => (
   <img 
     src="/logo.png" 
     alt="ULTRAMAP SOLUTION" 
-    className={`${className} w-auto object-contain`} 
+    className={`${className} w-auto object-contain mx-auto lg:mx-0`} 
     onError={(e) => {
       e.target.style.display = 'none';
-      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-xl">ULTRAMAP</span>'; 
+      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl">ULTRAMAP</span>'; 
     }}
   />
 );
 
-// --- PAYSLIP DESIGN (LANDSCAPE A4) ---
+// --- PAYSLIP DESIGN (PERFECT A4 LANDSCAPE) ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
   const netPay = totalEarnings - totalDeductions;
 
   return (
-    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:p-0 print:bg-white">
-      <div className="bg-white shadow-2xl p-10 w-[297mm] min-h-[210mm] min-w-[297mm] text-black font-sans text-sm relative print:shadow-none print:w-full print:min-w-0 print:absolute print:top-0 print:left-0 print:m-0 print:landscape">
+    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:bg-white print:p-0 print:m-0 print:h-screen print:w-screen print:overflow-hidden">
+      {/* 1. FIX: Scale down slightly for print to ensure fit (scale-95).
+          2. FIX: Exact A4 Landscape Dimensions (297mm x 210mm).
+      */}
+      <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans text-sm relative print:shadow-none print:scale-[0.95] print:origin-top-left">
         
         {/* Header - LOGO BESAR (h-24) */}
         <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
@@ -134,39 +137,83 @@ const PayslipDesign = ({ data, user }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-6 mb-8 border-b border-slate-300 pb-6">
-          <div><span className="block font-bold text-slate-600 text-xs">NAME</span><span className="uppercase font-semibold text-base">{user.name}</span></div>
-          <div><span className="block font-bold text-slate-600 text-xs">I/C NO</span><span className="font-mono text-base">{user.ic}</span></div>
-          <div><span className="block font-bold text-slate-600 text-xs">JOB TITLE</span><span className="uppercase font-semibold text-base">{user.position}</span></div>
-          <div className="text-right"><span className="block font-bold text-slate-600 text-xs">PAYSLIP FOR</span><span className="uppercase font-bold text-xl block">{data.month}</span></div>
+        {/* 4. FIX: Layout Nama & Job Title */}
+        <div className="flex justify-between mb-8 border-b border-slate-300 pb-6 gap-8">
+            {/* Left Column: Personal Info */}
+            <div className="space-y-3 w-1/2">
+                <div className="grid grid-cols-[100px_1fr]">
+                    <span className="font-bold text-slate-600 text-xs self-center">NAME</span>
+                    <span className="uppercase font-bold text-base truncate">{user.name}</span>
+                </div>
+                <div className="grid grid-cols-[100px_1fr]">
+                    <span className="font-bold text-slate-600 text-xs self-center">I/C NO</span>
+                    <span className="text-base font-sans font-semibold">{user.ic}</span>
+                </div>
+            </div>
+
+            {/* Right Column: Job & Payslip Info (Aligned with Deduction below) */}
+            <div className="space-y-3 w-1/2 pl-8 border-l border-dashed border-slate-200">
+                 {/* 5. FIX: Job Title Aligned Right Area */}
+                <div className="grid grid-cols-[100px_1fr]">
+                    <span className="font-bold text-slate-600 text-xs self-center">JOB TITLE</span>
+                    <span className="uppercase font-semibold text-base">{user.position}</span>
+                </div>
+                <div className="grid grid-cols-[100px_1fr]">
+                    <span className="font-bold text-slate-600 text-xs self-center">PAYSLIP FOR</span>
+                    <span className="uppercase font-bold text-lg">{data.month}</span>
+                </div>
+            </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-16 mb-6 font-mono text-base">
-          <div>
-            <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider font-sans">Earnings (RM)</div>
-            <div className="space-y-3">
-              <div className="flex justify-between"><span>BASIC SALARY</span><span>{data.basicSalary.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>ALLOWANCE</span><span>{data.allowance.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span>{data.mealAllowance.toFixed(2)}</span></div>
-              <div className="flex justify-between text-slate-400"><span>OT ALLOWANCE</span><span>{data.otAllowance.toFixed(2)}</span></div>
-              <div className="flex justify-between text-slate-400"><span>BONUS</span><span>{data.bonus.toFixed(2)}</span></div>
-            </div>
-            <div className="border-t border-slate-300 mt-6 pt-2 flex justify-between font-bold text-lg"><span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span></div>
-          </div>
-          <div className="flex flex-col h-full">
+        {/* Earnings & Deductions */}
+        <div className="flex gap-16 mb-6 h-[280px]">
+          {/* Earnings (Left - Wider) */}
+          <div className="flex-1 flex flex-col justify-between">
             <div>
-                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider font-sans">Deduction (RM)</div>
-                <div className="space-y-3">
+                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm">Earnings (RM)</div>
+                <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span>BASIC SALARY</span><span>{data.basicSalary.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>ALLOWANCE</span><span>{data.allowance.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span>{data.mealAllowance.toFixed(2)}</span></div>
+                <div className="flex justify-between text-slate-400"><span>OT ALLOWANCE</span><span>{data.otAllowance.toFixed(2)}</span></div>
+                <div className="flex justify-between text-slate-400"><span>BONUS</span><span>{data.bonus.toFixed(2)}</span></div>
+                </div>
+            </div>
+            <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4">
+                <span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Deductions (Right - Matches Job Title Width) */}
+          <div className="flex-1 flex flex-col justify-between pl-8 border-l border-dashed border-slate-200">
+            <div>
+                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm">Deduction (RM)</div>
+                <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span>EPF</span><span className="text-red-600">{data.epf.toFixed(2)}</span></div>
                 <div className="flex justify-between"><span>SOCSO</span><span className="text-red-600">{data.socso.toFixed(2)}</span></div>
                 </div>
             </div>
-            <div className="border-t border-slate-300 mt-auto pt-2 flex justify-between font-bold text-lg text-slate-600"><span>TOTAL DEDUCTION</span><span>{totalDeductions.toFixed(2)}</span></div>
+            <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4 text-slate-600">
+                <span>TOTAL DEDUCTION</span><span>{totalDeductions.toFixed(2)}</span>
+            </div>
           </div>
         </div>
-        <div className="mt-12 bg-slate-100 border-y-4 border-slate-800 py-6 px-8 flex justify-between items-center"><span className="font-bold text-xl uppercase tracking-widest text-slate-700">NET PAY</span><span className="font-bold text-4xl text-slate-900 font-mono">RM {netPay.toFixed(2)}</span></div>
+
+        {/* 6. FIX: Net Pay Font & Size (Regular Font, Smaller Size) */}
+        <div className="mt-4 bg-slate-100 border-y-4 border-slate-800 py-4 px-8 flex justify-between items-center">
+          <span className="font-bold text-lg uppercase tracking-widest text-slate-700">NET PAY</span>
+          <span className="font-bold text-3xl text-slate-900 font-sans">RM {netPay.toFixed(2)}</span>
+        </div>
+
+        {/* 2. FIX: Footer Position & Text Wrapping */}
+        <div className="absolute bottom-6 left-0 right-0 text-center px-12">
+            <div className="border-t border-slate-200 pt-2">
+                <p className="text-[9px] text-slate-400 leading-tight">This monthly salary slip is electronically generated and does not require any signature.</p>
+                <p className="text-[10px] font-bold text-slate-500 mt-1">ULTRAMAP SOLUTION (JM0876813-V)</p>
+            </div>
+        </div>
         
-        {/* BUTANG CETAK (HANYA MUNCUL DI SKRIN, HILANG BILA PRINT) */}
+        {/* BUTANG CETAK (Hilang bila print) */}
         <div className="absolute top-4 right-4 print:hidden">
              <button 
                 onClick={() => window.print()} 
@@ -175,8 +222,6 @@ const PayslipDesign = ({ data, user }) => {
                 <Printer size={20} /> Cetak / Simpan PDF
              </button>
         </div>
-
-        <div className="text-center text-[10px] text-slate-400 absolute bottom-8 left-0 right-0"><p>This monthly salary slip is electronically generated and does not require any signature.</p><p className="font-bold mt-1">ULTRAMAP SOLUTION (JM0876813-V)</p></div>
       </div>
     </div>
   );
@@ -408,7 +453,7 @@ const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
 }
 
 // --- MAIN APP ---
-export default function UltramapLiveV25() {
+export default function UltramapLiveV28() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -418,10 +463,7 @@ export default function UltramapLiveV25() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [viewedPayslip, setViewedPayslip] = useState(null);
-  
-  // 1. REAL TIME DATE DEFAULT
   const [currentDate] = useState(new Date()); 
-  
   const [hideSalary, setHideSalary] = useState(false);
   const [showAdminTimesheet, setShowAdminTimesheet] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -440,7 +482,7 @@ export default function UltramapLiveV25() {
     const unsubUsers = onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubAtt = onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubLeaves = onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
-    const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
+    const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id})))); // NEW LISTENER
     const unsubSettings = onSnapshot(doc(db, "settings", "global"), (s) => { if(s.exists()) setSettings(s.data()); });
     return () => { unsubscribeAuth(); unsubUsers(); unsubAtt(); unsubLeaves(); unsubTS(); unsubSettings(); };
   }, []);
@@ -492,7 +534,6 @@ export default function UltramapLiveV25() {
           await addDoc(collection(db, "attendance"), { date: dateStr, userId, type });
       }
   };
-  
   const submitLeaveDB = async (leaveData) => { await addDoc(collection(db, "leaves"), leaveData); alert("Permohonan cuti dihantar!"); };
   const deleteLeaveDB = async (id) => { if(confirm("Padam?")) await deleteDoc(doc(db, "leaves", id)); };
   
@@ -642,23 +683,25 @@ export default function UltramapLiveV25() {
                                     </Card>
                                     
                                     {/* 1. ADMIN - TETAPAN GAJI (LABEL ADDED & ACCESS FOR BOTH) */}
-                                    <Card className="p-6">
-                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-100 text-slate-500">
-                                                    <tr>
-                                                        <th className="p-3">Nama</th>
-                                                        <th className="p-3">Gaji (RM)</th>
-                                                        <th className="p-3">Elaun (RM)</th>
-                                                        <th className="p-3">Cuti (Hari)</th>
-                                                        <th className="p-3">Edit</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.fixedAllowance}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody>
-                                            </table>
-                                        </div>
-                                    </Card>
+                                    {currentUser.role === 'super_admin' && (
+                                        <Card className="p-6">
+                                            <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm text-left">
+                                                    <thead className="bg-slate-100 text-slate-500">
+                                                        <tr>
+                                                            <th className="p-3">Nama</th>
+                                                            <th className="p-3">Gaji (RM)</th>
+                                                            <th className="p-3">Elaun (RM)</th>
+                                                            <th className="p-3">Cuti (Hari)</th>
+                                                            <th className="p-3">Edit</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.fixedAllowance}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody>
+                                                </table>
+                                            </div>
+                                        </Card>
+                                    )}
                                     
                                     {/* ADMIN: LEAVE BALANCE LIST (NEW PLACEMENT) */}
                                     {getLeaveBalanceList()}
@@ -697,7 +740,7 @@ export default function UltramapLiveV25() {
                             {(currentUser.role === 'super_admin' || currentUser.role === 'manager') && (
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-700 mb-4">Timesheet Staff</h3>
-                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-emerald-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Semak & Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak & Luluskan</button>)}</Card>))}</div>
+                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-emerald-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak & Luluskan</button>)}</Card>))}</div>
                                 </div>
                             )}
                         </div>
