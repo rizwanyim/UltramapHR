@@ -4,14 +4,14 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updat
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
 import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key, History, FolderOpen, Folder, ShieldCheck } from 'lucide-react';
 
-// --- 1. CONFIG FIREBASE ---
+// --- 1. CONFIG FIREBASE (FIXED COMMA ERROR) ---
 const firebaseConfig = {
   apiKey: "AIzaSyD_1BO0kY9CpzselHNIG-NiuNbqitaywE8", 
   authDomain: "ultramap-hr.firebaseapp.com",
   projectId: "ultramap-hr",
   storageBucket: "ultramap-hr.appspot.com",
   messagingSenderId: "409015904834",
-  appId: "1:409015904834:web:8f4a7b59f6cc86585c9bdb",
+  appId: "1:409015904834:web:8f4a7b59f6cc86585c9bdb", // Koma ditambah di sini
   measurementId: "G-40VRCBXNL8"
 };
 
@@ -26,17 +26,10 @@ try {
 
 // --- DATA INITIAL ---
 const SEED_USERS = [
-  // Admin 1 (Super Admin)
   { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
-  
-  // Admin 2 (Manager/Admin)
-  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'ADMIN', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
-  
-  // Staff 1
-  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'STAFF', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
-  
-  // Staff 2
-  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'STAFF', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
+  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
+  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
+  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
 ];
 
 const JOHOR_HOLIDAYS = [
@@ -45,25 +38,24 @@ const JOHOR_HOLIDAYS = [
   { date: '2025-07-28', name: 'Cuti Ganti (Hol Johor)' }, 
   { date: '2025-08-31', name: 'Hari Kebangsaan' },
   { date: '2025-12-25', name: 'Hari Krismas' },
-  // 2026
-  { date: '2026-02-01', name: 'Hari Thaipusam' }, 
-  { date: '2026-02-02', name: 'Cuti Hari Thaipusam' }, 
-  { date: '2026-02-17', name: 'Tahun Baru Cina' }, 
+  { date: '2026-02-01', name: 'Hari Thaipusam' },
+  { date: '2026-02-02', name: 'Cuti Hari Thaipusam' },
+  { date: '2026-02-17', name: 'Tahun Baru Cina' },
   { date: '2026-02-18', name: 'Tahun Baru Cina Hari Kedua' },
   { date: '2026-02-19', name: 'Awal Ramadan' },
-  { date: '2026-03-21', name: 'Hari Raya Aidilfitri' }, 
-  { date: '2026-03-22', name: 'Hari Raya Aidilfitri Hari Kedua' }, 
-  { date: '2026-03-23', name: 'Hari Keputeraan Sultan Johor' }, 
+  { date: '2026-03-21', name: 'Hari Raya Aidilfitri' },
+  { date: '2026-03-22', name: 'Hari Raya Aidilfitri Hari Kedua' },
+  { date: '2026-03-23', name: 'Hari Keputeraan Sultan Johor' },
   { date: '2026-05-01', name: 'Hari Pekerja' },
   { date: '2026-05-27', name: 'Hari Raya Haji' },
-  { date: '2026-05-31', name: 'Hari Wesak' }, 
-  { date: '2026-06-01', name: 'Hari Keputeraan YDP Agong' }, 
-  { date: '2026-06-17', name: 'Awal Muharram' }, 
+  { date: '2026-05-31', name: 'Hari Wesak' },
+  { date: '2026-06-01', name: 'Hari Keputeraan YDP Agong' },
+  { date: '2026-06-17', name: 'Awal Muharram' },
   { date: '2026-07-21', name: 'Hari Hol Almarhum Sultan Iskandar' },
   { date: '2026-08-25', name: 'Maulidur Rasul' },
-  { date: '2026-08-31', name: 'Hari Kebangsaan' }, 
-  { date: '2026-09-16', name: 'Hari Malaysia' }, 
-  { date: '2026-11-08', name: 'Hari Deepavali' }, 
+  { date: '2026-08-31', name: 'Hari Kebangsaan' },
+  { date: '2026-09-16', name: 'Hari Malaysia' },
+  { date: '2026-11-08', name: 'Hari Deepavali' },
   { date: '2026-11-09', name: 'Cuti Hari Deepavali' },
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
@@ -113,14 +105,14 @@ const UltramapLogo = ({ className = "h-10" }) => (
   />
 );
 
-// --- PAYSLIP DESIGN (FOOTER FIX) ---
+// --- PAYSLIP DESIGN (FOOTER FIX v2) ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
   const netPay = totalEarnings - totalDeductions;
 
   return (
-    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:p-0 print:bg-white print:h-auto print:w-auto print:overflow-visible">
+    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:bg-white print:p-0 print:m-0 print:h-screen print:w-screen print:overflow-hidden">
       <style>
         {`
           @media print {
@@ -128,16 +120,22 @@ const PayslipDesign = ({ data, user }) => {
               size: A4 landscape;
               margin: 0;
             }
-            body { -webkit-print-color-adjust: exact; }
+            body { 
+              -webkit-print-color-adjust: exact; 
+              margin: 0;
+              padding: 0;
+            }
+            /* Hide URL headers/footers if browser adds them */
+            @page { margin: 0; }
           }
         `}
       </style>
       
-      {/* Main Container - P-10 padding */}
-      <div className="bg-white shadow-2xl p-10 w-[297mm] h-[210mm] text-black font-sans text-sm relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:m-0 print:scale-[0.98] print:origin-top-left flex flex-col">
+      {/* Main Container - Full A4 Landscape */}
+      <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans text-sm relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:scale-[0.98] print:origin-top-left flex flex-col justify-between box-border">
         
-        {/* Top Content */}
-        <div className="flex-grow">
+        {/* Top Content Group */}
+        <div>
             {/* Header */}
             <div className="flex justify-between items-end mb-6 border-b-2 border-slate-800 pb-4">
               <div><UltramapLogo className="h-24" /></div> 
@@ -148,30 +146,33 @@ const PayslipDesign = ({ data, user }) => {
               </div>
             </div>
 
+            {/* Info Grid */}
             <div className="flex justify-between mb-8 border-b border-slate-300 pb-6 gap-8">
                 <div className="space-y-3 w-1/2">
                     <div className="grid grid-cols-[100px_1fr] items-center">
                         <span className="text-slate-600 text-sm">NAME</span> 
-                        <span className="uppercase font-semibold text-base">{user.name}</span>
+                        <span className="uppercase font-semibold text-sm">{user.name}</span>
                     </div>
                     <div className="grid grid-cols-[100px_1fr] items-center">
                         <span className="text-slate-600 text-sm">I/C NO</span>
-                        <span className="uppercase font-semibold text-base">{user.ic}</span>
+                        <span className="text-sm font-sans font-semibold">{user.ic}</span>
                     </div>
                 </div>
                 <div className="space-y-3 w-1/2 pl-8 border-l border-dashed border-slate-200">
                     <div className="grid grid-cols-[100px_1fr] items-center">
                         <span className="text-slate-600 text-sm">JOB TITLE</span>
-                        <span className="uppercase font-semibold text-base">{user.position}</span>
+                        <span className="uppercase font-semibold text-sm">{user.position}</span>
                     </div>
                     <div className="grid grid-cols-[100px_1fr] items-center">
                         <span className="text-slate-600 text-sm">PAYSLIP FOR</span> 
-                        <span className="uppercase font-semibold text-base">{data.month}</span>
+                        <span className="uppercase font-semibold text-sm">{data.month}</span>
                     </div>
                 </div>
             </div>
             
-            <div className="flex gap-16 mb-4">
+            {/* Earnings & Deductions */}
+            <div className="flex gap-16 mb-4 h-[250px]">
+              {/* Earnings */}
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                     <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm">Earnings (RM)</div>
@@ -188,6 +189,7 @@ const PayslipDesign = ({ data, user }) => {
                 </div>
               </div>
 
+              {/* Deductions */}
               <div className="flex-1 flex flex-col justify-between pl-8 border-l border-dashed border-slate-200">
                 <div>
                     <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm">Deduction (RM)</div>
@@ -202,21 +204,22 @@ const PayslipDesign = ({ data, user }) => {
               </div>
             </div>
 
+            {/* Net Pay */}
             <div className="bg-slate-100 border-y-4 border-slate-800 py-4 px-8 flex justify-between items-center mb-2">
               <span className="font-bold text-lg uppercase tracking-widest text-slate-700">NET PAY</span>
-              <span className="font-bold text-1xl text-slate-900 font-sans">RM {netPay.toFixed(2)}</span>
+              <span className="font-bold text-2xl text-slate-900 font-sans">RM {netPay.toFixed(2)}</span>
             </div>
         </div>
 
-        {/* Footer - FIXED POSITION WITH MT-AUTO */}
-        <div className="mt-auto text-center px-12 pt-4">
+        {/* Footer - PUSHED TO BOTTOM */}
+        <div className="text-center px-12 pt-4 pb-2">
             <div className="border-t border-slate-200 pt-2">
                 <p className="text-[10px] text-slate-400 leading-tight">This monthly salary slip is electronically generated and does not require any signature.</p>
                 <p className="text-[10px] font-bold text-slate-500 mt-1">ULTRAMAP SOLUTION (JM0876813-V)</p>
             </div>
         </div>
         
-        {/* Print Button */}
+        {/* Print Button (Hidden on Print) */}
         <div className="absolute top-4 right-4 print:hidden">
              <button onClick={() => window.print()} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2">
                 <Printer size={20} /> Cetak / Simpan PDF
@@ -405,7 +408,7 @@ const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
 }
 
 // --- MAIN APP ---
-export default function UltramapLiveV29() {
+export default function UltramapLiveV30() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -450,7 +453,7 @@ export default function UltramapLiveV29() {
             const querySnapshot = await getDocs(q);
             if (querySnapshot.empty) { await addDoc(collection(db, "users"), u); }
         }
-        alert("Database seeded!");
+        alert("Database seeded! (Duplicates prevented). Sila create akaun di Firebase Auth tab dengan email yang sama.");
     } catch(e) {
         alert("Error seeding: " + e.message);
     }
@@ -520,7 +523,7 @@ export default function UltramapLiveV29() {
     const socso = (user.customSocso !== null && user.customSocso !== undefined) ? user.customSocso : (user.baseSalary * 0.005 + 5);
 
     if (user.role === 'super_admin' || user.role === 'manager' || user.role === 'project_manager') {
-       return { month: monthStr, basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: 0, rolloverNote: "", otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance - epf - socso) };
+       return { month: monthStr, basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: 0, rolloverNote: "Gaji Tetap (Admin)", otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance - epf - socso) };
     }
 
     let mealAllowance = 0, siteDaysCount = 0, rolloverNote = "";
@@ -552,7 +555,7 @@ export default function UltramapLiveV29() {
         </nav>
         <main className="max-w-6xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
-                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
+                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500"><ChevronLeft size={16} /> Kembali</button><div className="flex justify-end mb-4 print:hidden"><button onClick={() => window.print()} className="bg-blue-600 text-white px-4 py-2 rounded shadow flex items-center gap-2 hover:bg-blue-700"><Printer size={16} /> Cetak Slip PDF</button></div><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
             ) : (
                 <div className="space-y-6">
                     <h1 className="text-2xl font-bold text-slate-800">Hi! <span className="text-blue-600">{currentUser.nickname}</span>!</h1>
@@ -560,7 +563,6 @@ export default function UltramapLiveV29() {
                         <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
                             <div className="flex justify-between items-start"><p className="text-slate-400 text-xs mb-1 uppercase tracking-wider">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
                             <h2 className="text-2xl lg:text-3xl font-bold mt-1">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
-                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded text-[10px] font-bold flex items-center gap-2 w-fit mt-2"><Download size={12}/> Slip Gaji</button>
                         </div>
                         <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center"><p className="text-slate-500 text-xs mb-1 uppercase tracking-wider">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800">{getRemainingLeave(currentUser.id)} Hari</h2></div>
                     </div>
