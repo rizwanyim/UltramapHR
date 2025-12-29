@@ -26,10 +26,17 @@ try {
 
 // --- DATA INITIAL ---
 const SEED_USERS = [
-  { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '80xxxx-xx-xxxx', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
-  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'ADMIN', ic: '85xxxx-xx-xxxx', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
+  // Admin 1 (Super Admin)
+  { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
+  
+  // Admin 2 (Manager/Admin)
+  { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'ADMIN', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
+  
+  // Staff 1
   { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'STAFF', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
-  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'STAFF', ic: '9xxxx-xx-xxxx', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
+  
+  // Staff 2
+  { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'STAFF', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
 ];
 
 const JOHOR_HOLIDAYS = [
@@ -67,6 +74,7 @@ const calculateLeaveDuration = (startDate, endDate) => {
   let count = 0;
   let current = new Date(startDate);
   const end = new Date(endDate);
+  
   while (current <= end) {
     const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
     const isSunday = current.getDay() === 0;
@@ -113,7 +121,7 @@ const PayslipDesign = ({ data, user }) => {
   const netPay = totalEarnings - totalDeductions;
 
   return (
-    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen">
+    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:p-0 print:bg-white">
       <div className="bg-white shadow-2xl p-10 w-[297mm] min-h-[210mm] min-w-[297mm] text-black font-sans text-sm relative print:shadow-none print:w-full print:min-w-0 print:absolute print:top-0 print:left-0 print:m-0 print:landscape">
         
         {/* Header - LOGO BESAR (h-24) */}
@@ -157,6 +165,17 @@ const PayslipDesign = ({ data, user }) => {
           </div>
         </div>
         <div className="mt-12 bg-slate-100 border-y-4 border-slate-800 py-6 px-8 flex justify-between items-center"><span className="font-bold text-xl uppercase tracking-widest text-slate-700">NET PAY</span><span className="font-bold text-4xl text-slate-900 font-mono">RM {netPay.toFixed(2)}</span></div>
+        
+        {/* BUTANG CETAK (HANYA MUNCUL DI SKRIN, HILANG BILA PRINT) */}
+        <div className="absolute top-4 right-4 print:hidden">
+             <button 
+                onClick={() => window.print()} 
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2"
+             >
+                <Printer size={20} /> Cetak / Simpan PDF
+             </button>
+        </div>
+
         <div className="text-center text-[10px] text-slate-400 absolute bottom-8 left-0 right-0"><p>This monthly salary slip is electronically generated and does not require any signature.</p><p className="font-bold mt-1">ULTRAMAP SOLUTION (JM0876813-V)</p></div>
       </div>
     </div>
@@ -193,7 +212,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
     if (isLocked && !isAdminView) { alert("Tarikh ini dikunci."); return; }
 
     const isCurrentlySite = attendance.some(a => a.date === dateStr && a.userId === targetUserId);
-    
     if (!isCurrentlySite) {
         if (holidayInfo) { if (!window.confirm(`Hari ini ${holidayInfo.name}. Confirm kerja Site?`)) return; }
         const clickedDate = new Date(displayYear, displayMonth, day);
@@ -220,7 +238,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
 
   // --- ADMIN APPROVAL HANDLER ---
   const handleAdminAction = (action) => {
-      // Check cutoff warning
       if (!isPastCutoff && action === 'Approved') {
           if (!window.confirm("Bulan belum tamat (Cutoff belum sampai). Anda pasti mahu Luluskan sekarang?")) return;
       }
@@ -252,7 +269,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             
             let btnClass = "bg-white text-slate-500 border-slate-100 hover:border-blue-300";
             if (isHoliday) btnClass = "bg-orange-100 text-orange-600 border-orange-200 font-bold";
-            else if (isSite) btnClass = isVisualLock ? "bg-slate-400 text-white border-slate-500" : "bg-emerald-500 text-white shadow-md border-emerald-600";
+            else if (isSite) btnClass = "bg-emerald-500 text-white shadow-md border-emerald-600";
             else if (isSunday) btnClass = "bg-slate-200 text-slate-400 border-slate-300";
             else if (isVisualLock) btnClass = "opacity-50 cursor-not-allowed bg-slate-50 text-slate-300";
             
@@ -322,9 +339,9 @@ const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, 
             for (let i = 0; i < 12; i++) {
                 const d = new Date(2026, i, 1);
                 if (d > today) break;
-                // STAFF CONTROL: Only show if approved
+                // For Staff, only show if Approved
                 if (currentUser.role === 'staff') {
-                   // Simple check: if month matches current real time, check DB status
+                   // Only show approved slips
                    if (i === currentMonth && currentYear === 2026 && timesheetStatus.status !== 'Approved') continue;
                 }
                 months.push(d);
@@ -351,7 +368,11 @@ const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {availableMonths.map((date, idx) => (
                             <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group">
-                                <div className="flex items-center gap-2"><FileText size={16} className="text-red-500"/><span className="text-sm font-bold text-slate-700 group-hover:text-blue-600">{date.toLocaleDateString('ms-MY', { month: 'short' }).toUpperCase()}</span></div><Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
+                                <div className="flex items-center gap-2">
+                                    <FileText size={16} className="text-red-500"/>
+                                    <span className="text-sm font-bold text-slate-600 group-hover:text-blue-600">{date.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()}</span>
+                                </div>
+                                <Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
                             </button>
                         ))}
                     </div>
@@ -380,18 +401,14 @@ const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
       <div className="mt-6 pt-4 border-t"><h4 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-2"><History size={14}/> Sejarah Cuti Saya</h4><div className="space-y-2 max-h-40 overflow-y-auto">{leaves.filter(l => l.userId === currentUser.id).map(l => (
         <div key={l.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm">
             <div><span className="font-bold block">{l.startDate} - {l.endDate}</span> <span className="text-slate-500 text-xs italic">{l.reason} • {l.days} Hari</span></div>
-            <div className="flex flex-col items-end gap-1">
-                <Badge status={l.status} />
-                {l.approvedBy && <span className="text-[8px] text-slate-400">Oleh: {l.approvedBy}</span>}
-                <button type="button" onClick={() => handleWithdrawLeave(l.id)} className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors" title="Batalkan"><Trash2 size={14} /></button>
-            </div>
+            <div className="flex items-center gap-2"><Badge status={l.status} />{(l.status === 'Pending' || l.status === 'Approved') && (<button type="button" onClick={() => handleWithdrawLeave(l.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Batalkan"><Trash2 size={16} /></button>)}</div>
         </div>))}</div></div>
     </Card>
   );
 }
 
 // --- MAIN APP ---
-export default function UltramapLiveV26() {
+export default function UltramapLiveV25() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -401,7 +418,10 @@ export default function UltramapLiveV26() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [viewedPayslip, setViewedPayslip] = useState(null);
+  
+  // 1. REAL TIME DATE DEFAULT
   const [currentDate] = useState(new Date()); 
+  
   const [hideSalary, setHideSalary] = useState(false);
   const [showAdminTimesheet, setShowAdminTimesheet] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -420,7 +440,7 @@ export default function UltramapLiveV26() {
     const unsubUsers = onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubAtt = onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubLeaves = onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
-    const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id})))); // NEW LISTENER
+    const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubSettings = onSnapshot(doc(db, "settings", "global"), (s) => { if(s.exists()) setSettings(s.data()); });
     return () => { unsubscribeAuth(); unsubUsers(); unsubAtt(); unsubLeaves(); unsubTS(); unsubSettings(); };
   }, []);
@@ -437,9 +457,9 @@ export default function UltramapLiveV26() {
             const querySnapshot = await getDocs(q);
             if (querySnapshot.empty) { await addDoc(collection(db, "users"), u); }
         }
-        alert("Database seeded!");
+        alert("Database seeded! (Duplicates prevented). Sila create akaun di Firebase Auth tab dengan email yang sama.");
     } catch(e) {
-        alert("Error: " + e.message);
+        alert("Error seeding: " + e.message);
     }
   };
 
@@ -512,6 +532,27 @@ export default function UltramapLiveV26() {
       return timesheets.find(t => t.userId === userId && t.month === monthStr) || { userId, month: monthStr, status: 'Draft' };
   };
 
+  // 1. LOGIC BAKI CUTI LIST (ADMIN)
+  const getLeaveBalanceList = () => {
+      return (
+        <Card className="p-6">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Users size={20}/> Senarai Baki Cuti Staff</h3>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+                {users.map(u => {
+                    const approvedDays = leaves.filter(l => l.userId === u.id && l.status === 'Approved').reduce((acc, curr) => acc + curr.days, 0);
+                    const remaining = u.leaveBalance - approvedDays;
+                    return (
+                        <div key={u.id} className="flex justify-between items-center text-sm border-b pb-1">
+                            <span className="font-bold text-slate-700">{u.nickname}</span>
+                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">Baki: {remaining} / {u.leaveBalance}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </Card>
+      );
+  };
+
   const handleChangePassword = async (e) => {
       e.preventDefault();
       if(newPasswordData.new !== newPasswordData.confirm) return alert("Password tidak sama!");
@@ -531,6 +572,7 @@ export default function UltramapLiveV26() {
     const year = forMonthDate.getFullYear();
     const month = forMonthDate.getMonth();
     
+    // Use fallback to 0 or auto calculation if null
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
     const socso = (user.customSocso !== null && user.customSocso !== undefined) ? user.customSocso : (user.baseSalary * 0.005 + 5);
 
@@ -598,14 +640,29 @@ export default function UltramapLiveV26() {
                                             <div className="flex-1"><p className="text-xs font-bold text-slate-500 uppercase mb-1">Tarikh Submission</p><div className="flex items-center gap-2"><input type="number" min="1" max="31" placeholder="Auto" value={settings.customSubmissionDate || ''} onChange={(e) => updateSettingsDB(e.target.value ? Number(e.target.value) : null)} className="w-16 border rounded text-center font-bold text-lg p-1" /><span className="text-sm font-bold text-slate-600">hb</span>{settings.customSubmissionDate !== null && <button onClick={() => updateSettingsDB(null)} className="ml-2 text-xs bg-slate-200 px-2 py-1 rounded">Reset</button>}</div></div>
                                         </div>
                                     </Card>
-                                    {currentUser.role === 'super_admin' && (
-                                        <>
-                                            <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><div className="overflow-x-auto"><table className="w-full text-sm text-left"><thead className="bg-slate-100 text-slate-500"><tr><th className="p-3">Nama</th><th className="p-3">Basic (RM)</th><th className="p-3">Cuti</th><th className="p-3">Edit</th></tr></thead><tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody></table></div></Card>
-                                            <div className="text-right">
-                                                <button onClick={handleResetLeave} className="text-xs text-red-500 underline hover:text-red-700">Reset Cuti Tahunan (2026)</button>
-                                            </div>
-                                        </>
-                                    )}
+                                    
+                                    {/* 1. ADMIN - TETAPAN GAJI (LABEL ADDED & ACCESS FOR BOTH) */}
+                                    <Card className="p-6">
+                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-slate-100 text-slate-500">
+                                                    <tr>
+                                                        <th className="p-3">Nama</th>
+                                                        <th className="p-3">Gaji (RM)</th>
+                                                        <th className="p-3">Elaun (RM)</th>
+                                                        <th className="p-3">Cuti (Hari)</th>
+                                                        <th className="p-3">Edit</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.fixedAllowance}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody>
+                                            </table>
+                                        </div>
+                                    </Card>
+                                    
+                                    {/* ADMIN: LEAVE BALANCE LIST (NEW PLACEMENT) */}
+                                    {getLeaveBalanceList()}
+
                                     <Card className="p-6">
                                         <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><CheckCircle size={20}/> Pengesahan Cuti</h3>
                                         {leaves.filter(l => l.status === 'Pending').map(leave => (
@@ -616,6 +673,8 @@ export default function UltramapLiveV26() {
                                             </div>
                                         ))}
                                         {leaves.filter(l => l.status === 'Pending').length === 0 && <p className="text-xs text-slate-400 italic">Tiada permohonan.</p>}
+                                        
+                                        {/* 2. ADMIN - HISTORY CUTI (MOVED HERE) */}
                                         <LeaveHistoryViewer users={users} leaves={leaves} />
                                     </Card>
                                 </>
@@ -638,11 +697,12 @@ export default function UltramapLiveV26() {
                             {(currentUser.role === 'super_admin' || currentUser.role === 'manager') && (
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-700 mb-4">Timesheet Staff</h3>
-                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-blue-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak & Luluskan</button>)}</Card>))}</div>
+                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-emerald-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Semak & Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak & Luluskan</button>)}</Card>))}</div>
                                 </div>
                             )}
                         </div>
                     </div>
+                    {/* 4. SENARAI SLIP GAJI DI BAWAH (UNTUK SEMUA) */}
                     <PayslipFolderSystem currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} timesheetStatus={getTimesheetStatusFromDB(currentUser.id)} />
                 </div>
             )}
