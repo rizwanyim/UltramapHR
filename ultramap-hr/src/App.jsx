@@ -74,7 +74,6 @@ const calculateLeaveDuration = (startDate, endDate) => {
   let count = 0;
   let current = new Date(startDate);
   const end = new Date(endDate);
-  
   while (current <= end) {
     const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
     const isSunday = current.getDay() === 0;
@@ -114,111 +113,112 @@ const UltramapLogo = ({ className = "h-10" }) => (
   />
 );
 
-// --- PAYSLIP DESIGN (PERFECT A4 LANDSCAPE) ---
+// --- PAYSLIP DESIGN (FOOTER FIX) ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
   const netPay = totalEarnings - totalDeductions;
 
   return (
-    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:bg-white print:p-0 print:m-0 print:h-screen print:w-screen print:overflow-hidden">
-      {/* 1. FIX: Scale down slightly for print to ensure fit (scale-95).
-          2. FIX: Exact A4 Landscape Dimensions (297mm x 210mm).
-      */}
-      <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans text-sm relative print:shadow-none print:scale-[0.95] print:origin-top-left">
+    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:p-0 print:bg-white print:h-auto print:w-auto print:overflow-visible">
+      <style>
+        {`
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 0;
+            }
+            body { -webkit-print-color-adjust: exact; }
+          }
+        `}
+      </style>
+      
+      {/* Main Container - P-10 padding */}
+      <div className="bg-white shadow-2xl p-10 w-[297mm] h-[210mm] text-black font-sans text-sm relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:m-0 print:scale-[0.98] print:origin-top-left flex flex-col">
         
-        {/* Header - LOGO BESAR (h-24) */}
-        <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
-          <div><UltramapLogo className="h-24" /></div> 
-          <div className="text-right">
-            <p className="font-bold uppercase text-xs mb-1 text-slate-500">Private & Confidential</p>
-            <h2 className="text-xl font-bold text-slate-800 tracking-wide">ULTRAMAP SOLUTION</h2>
-            <p className="text-[10px] text-slate-400">Monthly Salary Slip</p>
-          </div>
+        {/* Top Content */}
+        <div className="flex-grow">
+            {/* Header */}
+            <div className="flex justify-between items-end mb-6 border-b-2 border-slate-800 pb-4">
+              <div><UltramapLogo className="h-24" /></div> 
+              <div className="text-right">
+                <p className="font-bold uppercase text-xs mb-1 text-slate-500">Private & Confidential</p>
+                <h2 className="text-xl font-bold text-slate-800 tracking-wide">ULTRAMAP SOLUTION</h2>
+                <p className="text-[10px] text-slate-400">Monthly Salary Slip</p>
+              </div>
+            </div>
+
+            <div className="flex justify-between mb-8 border-b border-slate-300 pb-6 gap-8">
+                <div className="space-y-3 w-1/2">
+                    <div className="grid grid-cols-[100px_1fr] items-center">
+                        <span className="text-slate-600 text-sm">NAME</span> 
+                        <span className="uppercase font-semibold text-base">{user.name}</span>
+                    </div>
+                    <div className="grid grid-cols-[100px_1fr] items-center">
+                        <span className="text-slate-600 text-sm">I/C NO</span>
+                        <span className="uppercase font-semibold text-base">{user.ic}</span>
+                    </div>
+                </div>
+                <div className="space-y-3 w-1/2 pl-8 border-l border-dashed border-slate-200">
+                    <div className="grid grid-cols-[100px_1fr] items-center">
+                        <span className="text-slate-600 text-sm">JOB TITLE</span>
+                        <span className="uppercase font-semibold text-base">{user.position}</span>
+                    </div>
+                    <div className="grid grid-cols-[100px_1fr] items-center">
+                        <span className="text-slate-600 text-sm">PAYSLIP FOR</span> 
+                        <span className="uppercase font-semibold text-base">{data.month}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="flex gap-16 mb-4">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                    <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm">Earnings (RM)</div>
+                    <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span>BASIC SALARY</span><span>{data.basicSalary.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>ALLOWANCE</span><span>{data.allowance.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span>{data.mealAllowance.toFixed(2)}</span></div>
+                    <div className="flex justify-between text-slate-400"><span>OT ALLOWANCE</span><span>{data.otAllowance.toFixed(2)}</span></div>
+                    <div className="flex justify-between text-slate-400"><span>BONUS</span><span>{data.bonus.toFixed(2)}</span></div>
+                    </div>
+                </div>
+                <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-2">
+                    <span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="flex-1 flex flex-col justify-between pl-8 border-l border-dashed border-slate-200">
+                <div>
+                    <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm">Deduction (RM)</div>
+                    <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span>EPF</span><span className="text-red-600">{data.epf.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>SOCSO</span><span className="text-red-600">{data.socso.toFixed(2)}</span></div>
+                    </div>
+                </div>
+                <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-2 text-slate-600">
+                    <span>TOTAL DEDUCTION</span><span>{totalDeductions.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-100 border-y-4 border-slate-800 py-4 px-8 flex justify-between items-center mb-2">
+              <span className="font-bold text-lg uppercase tracking-widest text-slate-700">NET PAY</span>
+              <span className="font-bold text-1xl text-slate-900 font-sans">RM {netPay.toFixed(2)}</span>
+            </div>
         </div>
 
-        {/* 4. FIX: Layout Nama & Job Title */}
-        <div className="flex justify-between mb-8 border-b border-slate-300 pb-6 gap-8">
-            {/* Left Column: Personal Info */}
-            <div className="space-y-3 w-1/2">
-                <div className="grid grid-cols-[100px_1fr]">
-                    <span className="font-bold text-slate-600 text-xs self-center">NAME</span>
-                    <span className="uppercase font-semibold text-base">{user.name}</span>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                    <span className="font-bold text-slate-600 text-xs self-center">I/C NO</span>
-                    <span className="text-base font-sans font-semibold">{user.ic}</span>
-                </div>
-            </div>
-
-            {/* Right Column: Job & Payslip Info (Aligned with Deduction below) */}
-            <div className="space-y-3 w-1/2 pl-8 border-l border-dashed border-slate-200">
-                 {/* 5. FIX: Job Title Aligned Right Area */}
-                <div className="grid grid-cols-[100px_1fr]">
-                    <span className="font-bold text-slate-600 text-xs self-center">JOB TITLE</span>
-                    <span className="uppercase font-semibold text-base">{user.position}</span>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                    <span className="font-bold text-slate-600 text-xs self-center">PAYSLIP FOR</span>
-                    <span className="uppercase font-semibold text-base">{data.month}</span>
-                </div>
-            </div>
-        </div>
-        
-        {/* Earnings & Deductions */}
-        <div className="flex gap-16 mb-6 h-[280px]">
-          {/* Earnings (Left - Wider) */}
-          <div className="flex-1 flex flex-col justify-between">
-            <div>
-                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm">Earnings (RM)</div>
-                <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span>BASIC SALARY</span><span>{data.basicSalary.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>ALLOWANCE</span><span>{data.allowance.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span>{data.mealAllowance.toFixed(2)}</span></div>
-                <div className="flex justify-between text-slate-400"><span>OT ALLOWANCE</span><span>{data.otAllowance.toFixed(2)}</span></div>
-                <div className="flex justify-between text-slate-400"><span>BONUS</span><span>{data.bonus.toFixed(2)}</span></div>
-                </div>
-            </div>
-            <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4">
-                <span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Deductions (Right - Matches Job Title Width) */}
-          <div className="flex-1 flex flex-col justify-between pl-8 border-l border-dashed border-slate-200">
-            <div>
-                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm">Deduction (RM)</div>
-                <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span>EPF</span><span className="text-red-600">{data.epf.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>SOCSO</span><span className="text-red-600">{data.socso.toFixed(2)}</span></div>
-                </div>
-            </div>
-            <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4 text-slate-600">
-                <span>TOTAL DEDUCTION</span><span>{totalDeductions.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 6. FIX: Net Pay Font & Size (Regular Font, Smaller Size) */}
-        <div className="mt-4 bg-slate-100 border-y-4 border-slate-800 py-4 px-8 flex justify-between items-center">
-          <span className="font-bold text-lg uppercase tracking-widest text-slate-700">NET PAY</span>
-          <span className="font-bold text-2xl text-slate-900 font-sans">RM {netPay.toFixed(2)}</span>
-        </div>
-
-        {/* 2. FIX: Footer Position & Text Wrapping */}
-        <div className="absolute bottom-6 left-0 right-0 text-center px-12">
+        {/* Footer - FIXED POSITION WITH MT-AUTO */}
+        <div className="mt-auto text-center px-12 pt-4">
             <div className="border-t border-slate-200 pt-2">
-                <p className="text-[9px] text-slate-400 leading-tight">This monthly salary slip is electronically generated and does not require any signature.</p>
+                <p className="text-[10px] text-slate-400 leading-tight">This monthly salary slip is electronically generated and does not require any signature.</p>
                 <p className="text-[10px] font-bold text-slate-500 mt-1">ULTRAMAP SOLUTION (JM0876813-V)</p>
             </div>
         </div>
         
-        {/* BUTANG CETAK (Hilang bila print) */}
+        {/* Print Button */}
         <div className="absolute top-4 right-4 print:hidden">
-             <button 
-                onClick={() => window.print()} 
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2"
-             >
+             <button onClick={() => window.print()} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2">
                 <Printer size={20} /> Cetak / Simpan PDF
              </button>
         </div>
@@ -253,7 +253,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
     let isLocked = false;
     if (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) isLocked = true;
     if (!isAdminView && (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved')) isLocked = true;
-    
     if (isLocked && !isAdminView) { alert("Tarikh ini dikunci."); return; }
 
     const isCurrentlySite = attendance.some(a => a.date === dateStr && a.userId === targetUserId);
@@ -281,7 +280,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
       displayCount = attendance.filter(a => new Date(a.date).getMonth() === displayMonth && a.userId === targetUserId).length;
   }
 
-  // --- ADMIN APPROVAL HANDLER ---
   const handleAdminAction = (action) => {
       if (!isPastCutoff && action === 'Approved') {
           if (!window.confirm("Bulan belum tamat (Cutoff belum sampai). Anda pasti mahu Luluskan sekarang?")) return;
@@ -295,15 +293,9 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
           <h3 className="font-bold text-lg flex items-center gap-2 text-slate-700"><Calendar size={20} /> Timesheet</h3>
           {isPastCutoff ? (<div className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200"><button onClick={() => setSwipeIndex(0)} className={`p-1.5 rounded-full ${swipeIndex === 0 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronLeft size={16} /></button><span className="text-[10px] font-bold px-3 text-slate-600 uppercase min-w-[80px] text-center">{getMonthStr(displayDate)}</span><button onClick={() => setSwipeIndex(1)} className={`p-1.5 rounded-full ${swipeIndex === 1 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronRight size={16} /></button></div>) : <Badge status={tsStatus.status} />}
       </div>
-      
       {tsStatus.approvedBy && (
-          <div className="mb-2 flex justify-end">
-              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded flex items-center gap-1">
-                 <ShieldCheck size={10} /> Disahkan oleh: <b>{tsStatus.approvedBy}</b>
-              </span>
-          </div>
+          <div className="mb-2 flex justify-end"><span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded flex items-center gap-1"><ShieldCheck size={10} /> Disahkan oleh: <b>{tsStatus.approvedBy}</b></span></div>
       )}
-
       <div className="mb-4"><div className="grid grid-cols-7 gap-1">{['A','I','S','R','K','J','S'].map(d => (<div key={d} className="text-center text-[10px] font-bold text-slate-400 mb-1">{d}</div>))}{emptySlots.map((_, i) => <div key={`empty-${i}`}></div>)}{dayArray.map(day => {
             const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const isSite = attendance.some(a => a.date === dateStr && a.userId === targetUserId && a.type === 'site');
@@ -311,26 +303,18 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             const isSunday = new Date(displayYear, displayMonth, day).getDay() === 0;
             let isVisualLock = (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) || isAdminView || (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved');
             if (isAdminView) isVisualLock = false; 
-            
             let btnClass = "bg-white text-slate-500 border-slate-100 hover:border-blue-300";
             if (isHoliday) btnClass = "bg-orange-100 text-orange-600 border-orange-200 font-bold";
             else if (isSite) btnClass = "bg-emerald-500 text-white shadow-md border-emerald-600";
             else if (isSunday) btnClass = "bg-slate-200 text-slate-400 border-slate-300";
             else if (isVisualLock) btnClass = "opacity-50 cursor-not-allowed bg-slate-50 text-slate-300";
-            
             if(isSite && !isVisualLock) btnClass = "bg-emerald-500 text-white shadow-md border-emerald-600";
-
             return <button key={day} onClick={() => handleToggle(day)} disabled={isVisualLock && !isAdminView} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative ${btnClass}`}><span className="font-bold">{day}</span>{isSite && !isVisualLock && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}{isVisualLock && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}</button>;
       })}</div></div>
-      
       {activeHolidays.length > 0 && (<div className="mb-4 space-y-1">{activeHolidays.map((h, i) => (<div key={i} className="text-[10px] flex items-center gap-2 text-orange-700 bg-orange-50 px-2 py-1 rounded border border-orange-100"><span className="font-bold bg-orange-200 px-1 rounded text-orange-800">{new Date(h.date).getDate()}</span><span>{h.name}</span></div>))}</div>)}
-
       <div className="mt-auto flex justify-between items-center border-t pt-4"><div><p className="text-xs text-slate-500 uppercase font-bold">Total ({getMonthStr(displayDate)})</p><p className="text-xl font-bold text-emerald-600">{displayCount} <span className="text-[10px] font-normal text-slate-500">{countLabel}</span></p></div>
       {isAdminView ? (
-          <div className="flex gap-2">
-             <button onClick={() => handleAdminAction('Rejected')} className="px-3 py-1 bg-red-100 text-red-600 rounded text-xs font-bold hover:bg-red-200">Reject</button>
-             <button onClick={() => handleAdminAction('Approved')} className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-bold shadow hover:bg-emerald-700">Approve</button>
-          </div>
+          <div className="flex gap-2"><button onClick={() => handleAdminAction('Rejected')} className="px-3 py-1 bg-red-100 text-red-600 rounded text-xs font-bold hover:bg-red-200">Reject</button><button onClick={() => handleAdminAction('Approved')} className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-bold shadow hover:bg-emerald-700">Approve</button></div>
       ) : (
           !isPastCutoff && tsStatus.status !== 'Submitted' && tsStatus.status !== 'Approved' && (<button disabled={!canSubmit} onClick={canSubmit ? () => updateTimesheetStatus(targetUserId, 'Submitted') : undefined} className={`px-4 py-2 rounded font-bold text-xs shadow-lg transition-all ${canSubmit ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>{isSubmissionOpen ? "Hantar untuk Semakan" : `Hantar (Dibuka ${effectiveOpenDate}hb)`}</button>)
       )}
@@ -339,27 +323,17 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   );
 };
 
-// --- LEAVE HISTORY VIEWER (ADMIN) ---
+// --- LEAVE HISTORY VIEWER ---
 const LeaveHistoryViewer = ({ users, leaves }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     return (
         <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
             <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><History size={14}/> Sejarah Cuti Semua Staff</h4>
-            <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
-                {users.map(u => (
-                    <button key={u.id} onClick={() => setSelectedUser(u.id === selectedUser ? null : u.id)} className={`px-3 py-1 rounded text-xs font-bold whitespace-nowrap ${selectedUser === u.id ? 'bg-blue-600 text-white' : 'bg-white border text-slate-600'}`}>{u.nickname}</button>
-                ))}
-            </div>
+            <div className="flex gap-2 mb-3 overflow-x-auto pb-2">{users.map(u => (<button key={u.id} onClick={() => setSelectedUser(u.id === selectedUser ? null : u.id)} className={`px-3 py-1 rounded text-xs font-bold whitespace-nowrap ${selectedUser === u.id ? 'bg-blue-600 text-white' : 'bg-white border text-slate-600'}`}>{u.nickname}</button>))}</div>
             {selectedUser && (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                     {leaves.filter(l => l.userId === selectedUser).map(l => (
-                        <div key={l.id} className="flex justify-between items-center text-sm border-b pb-1 bg-white p-2 rounded">
-                            <div><span className="font-bold block">{l.startDate} - {l.endDate}</span><span className="text-xs text-slate-500">{l.reason}</span></div>
-                            <div className="text-right">
-                                <Badge status={l.status} />
-                                {l.approvedBy && <span className="block text-[9px] text-slate-400 mt-1">Oleh: {l.approvedBy}</span>}
-                            </div>
-                        </div>
+                        <div key={l.id} className="flex justify-between items-center text-sm border-b pb-1 bg-white p-2 rounded"><div><span className="font-bold block">{l.startDate} - {l.endDate}</span><span className="text-xs text-slate-500">{l.reason}</span></div><div className="text-right"><Badge status={l.status} />{l.approvedBy && <span className="block text-[9px] text-slate-400 mt-1">Oleh: {l.approvedBy}</span>}</div></div>
                     ))}
                     {leaves.filter(l => l.userId === selectedUser).length === 0 && <p className="text-xs text-slate-400 text-center">Tiada rekod cuti.</p>}
                 </div>
@@ -371,54 +345,35 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
 // --- PAYSLIP LIST (FOLDER SYSTEM) ---
 const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus }) => {
     const [selectedYear, setSelectedYear] = useState(2025); 
-
     const getAvailableMonths = (year) => {
         const months = [];
         const today = new Date();
         const currentYear = today.getFullYear();
         const currentMonth = today.getMonth(); 
-
-        if (year === 2025) {
-            months.push(new Date(2025, 11, 1)); 
-        } else if (year === 2026) {
+        if (year === 2025) { months.push(new Date(2025, 11, 1)); } 
+        else if (year === 2026) {
             for (let i = 0; i < 12; i++) {
                 const d = new Date(2026, i, 1);
                 if (d > today) break;
-                // For Staff, only show if Approved
-                if (currentUser.role === 'staff') {
-                   // Only show approved slips
-                   if (i === currentMonth && currentYear === 2026 && timesheetStatus.status !== 'Approved') continue;
-                }
+                if (currentUser.role === 'staff') { if (i === currentMonth && currentYear === 2026 && timesheetStatus.status !== 'Approved') continue; }
                 months.push(d);
             }
         }
         return months;
     };
-
     const availableMonths = getAvailableMonths(selectedYear);
-
     return (
         <div className="mt-8 pt-8 border-t">
             <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2"><FileText size={20}/> Arkib Slip Gaji</h3>
             <div className="flex gap-4 mb-4">
-                <button onClick={() => setSelectedYear(2025)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2025 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
-                    {selectedYear === 2025 ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">2025</span>
-                </button>
-                <button onClick={() => setSelectedYear(2026)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2026 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
-                    {selectedYear === 2026 ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">2026</span>
-                </button>
+                <button onClick={() => setSelectedYear(2025)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2025 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>{selectedYear === 2025 ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">2025</span></button>
+                <button onClick={() => setSelectedYear(2026)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all ${selectedYear === 2026 ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>{selectedYear === 2026 ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">2026</span></button>
             </div>
             <div className="bg-slate-50 p-4 rounded-b-lg rounded-tr-lg border border-slate-200 min-h-[100px]">
                 {availableMonths.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {availableMonths.map((date, idx) => (
-                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group">
-                                <div className="flex items-center gap-2">
-                                    <FileText size={16} className="text-red-500"/>
-                                    <span className="text-sm font-bold text-slate-600 group-hover:text-blue-600">{date.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()}</span>
-                                </div>
-                                <Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
-                            </button>
+                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group"><div className="flex items-center gap-2"><FileText size={16} className="text-red-500"/><span className="text-sm font-bold text-slate-700 group-hover:text-blue-600">{date.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()}</span></div><Download size={14} className="text-slate-300 group-hover:text-blue-500"/></button>
                         ))}
                     </div>
                 ) : <div className="text-center text-slate-400 py-4 text-xs italic">Tiada rekod atau belum diluluskan.</div>}
@@ -444,21 +399,18 @@ const LeaveForm = ({ currentUser, leaves, setLeaves, deleteLeaveDB }) => {
         <button className="w-full bg-slate-800 text-white py-2 rounded text-sm font-bold hover:bg-slate-900">Hantar</button>
       </form>
       <div className="mt-6 pt-4 border-t"><h4 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-2"><History size={14}/> Sejarah Cuti Saya</h4><div className="space-y-2 max-h-40 overflow-y-auto">{leaves.filter(l => l.userId === currentUser.id).map(l => (
-        <div key={l.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm">
-            <div><span className="font-bold block">{l.startDate} - {l.endDate}</span> <span className="text-slate-500 text-xs italic">{l.reason} • {l.days} Hari</span></div>
-            <div className="flex items-center gap-2"><Badge status={l.status} />{(l.status === 'Pending' || l.status === 'Approved') && (<button type="button" onClick={() => handleWithdrawLeave(l.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Batalkan"><Trash2 size={16} /></button>)}</div>
-        </div>))}</div></div>
+        <div key={l.id} className="flex justify-between items-center py-2 border-b last:border-0 text-sm"><div><span className="font-bold block">{l.startDate} - {l.endDate}</span> <span className="text-slate-500 text-xs italic">{l.reason} • {l.days} Hari</span></div><div className="flex items-center gap-2"><Badge status={l.status} />{(l.status === 'Pending' || l.status === 'Approved') && (<button type="button" onClick={() => handleWithdrawLeave(l.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Batalkan"><Trash2 size={16} /></button>)}</div></div>))}</div></div>
     </Card>
   );
 }
 
 // --- MAIN APP ---
-export default function UltramapLiveV28() {
+export default function UltramapLiveV29() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [leaves, setLeaves] = useState([]);
-  const [timesheets, setTimesheets] = useState([]); // NEW STATE FOR TIMESHEET STATUS FROM DB
+  const [timesheets, setTimesheets] = useState([]); 
   const [settings, setSettings] = useState({ customSubmissionDate: null });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -470,7 +422,6 @@ export default function UltramapLiveV28() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPasswordData, setNewPasswordData] = useState({ new: '', confirm: '' });
 
-  // DB LISTENERS
   useEffect(() => {
     if (!auth) return;
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -482,7 +433,7 @@ export default function UltramapLiveV28() {
     const unsubUsers = onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubAtt = onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubLeaves = onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
-    const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id})))); // NEW LISTENER
+    const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
     const unsubSettings = onSnapshot(doc(db, "settings", "global"), (s) => { if(s.exists()) setSettings(s.data()); });
     return () => { unsubscribeAuth(); unsubUsers(); unsubAtt(); unsubLeaves(); unsubTS(); unsubSettings(); };
   }, []);
@@ -499,30 +450,21 @@ export default function UltramapLiveV28() {
             const querySnapshot = await getDocs(q);
             if (querySnapshot.empty) { await addDoc(collection(db, "users"), u); }
         }
-        alert("Database seeded! (Duplicates prevented). Sila create akaun di Firebase Auth tab dengan email yang sama.");
+        alert("Database seeded!");
     } catch(e) {
         alert("Error seeding: " + e.message);
     }
   };
 
-  // --- NEW: SUPER ADMIN RESET LEAVE ---
   const handleResetLeave = async () => {
       if (!confirm("AMARAN: Ini akan reset cuti SEMUA staff kepada default (14 hari) dan padam rekod lama. Teruskan?")) return;
-      // 1. Reset all users leave balance
-      // 2. Ideally delete old leave records (Optional)
       alert("Fungsi ini akan dilaksanakan di server sebenar. (Simulasi: Cuti di-reset).");
   };
 
-  // 1. LOGIC BAKI CUTI: Dapatkan baki terkini dari DB
-  // Formula: Baki = (Kelayakan dari Users) - (Jumlah hari dari Leaves yg Approved)
   const getRemainingLeave = (userId) => {
       const user = users.find(u => u.id === userId);
       if (!user) return 0;
-      
-      const approvedDays = leaves
-          .filter(l => l.userId === userId && l.status === 'Approved')
-          .reduce((acc, curr) => acc + (curr.days || 0), 0);
-          
+      const approvedDays = leaves.filter(l => l.userId === userId && l.status === 'Approved').reduce((acc, curr) => acc + (curr.days || 0), 0);
       return (user.leaveBalance || 14) - approvedDays;
   };
 
@@ -537,59 +479,27 @@ export default function UltramapLiveV28() {
   const submitLeaveDB = async (leaveData) => { await addDoc(collection(db, "leaves"), leaveData); alert("Permohonan cuti dihantar!"); };
   const deleteLeaveDB = async (id) => { if(confirm("Padam?")) await deleteDoc(doc(db, "leaves", id)); };
   
-  const approveLeaveDB = async (id, status) => { 
-      await updateDoc(doc(db, "leaves", id), { 
-          status, 
-          approvedBy: currentUser.nickname // AUDIT TRAIL 
-      }); 
-  };
-  
+  const approveLeaveDB = async (id, status) => { await updateDoc(doc(db, "leaves", id), { status, approvedBy: currentUser.nickname }); };
   const updateSettingsDB = async (val) => { await updateDoc(doc(db, "settings", "global"), { customSubmissionDate: val }); };
   const updateUserDB = async (u) => { await updateDoc(doc(db, "users", u.id), { baseSalary: u.baseSalary, fixedAllowance: u.fixedAllowance, customEpf: u.customEpf, customSocso: u.customSocso, leaveBalance: u.leaveBalance }); setEditingUser(null); alert("Data Staff Dikemaskini"); };
   
-  // NEW: Update Timesheet Status in DB
   const updateTimesheetStatusDB = async (userId, status) => {
       const monthStr = currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
       const existing = timesheets.find(t => t.userId === userId && t.month === monthStr);
-      
-      if (existing) {
-          await updateDoc(doc(db, "timesheets", existing.id), { 
-              status, 
-              approvedBy: status === 'Approved' ? currentUser.nickname : null 
-          });
-      } else {
-          await addDoc(collection(db, "timesheets"), { 
-              userId, 
-              month: monthStr, 
-              status, 
-              approvedBy: status === 'Approved' ? currentUser.nickname : null 
-          });
-      }
+      if (existing) { await updateDoc(doc(db, "timesheets", existing.id), { status, approvedBy: status === 'Approved' ? currentUser.nickname : null }); } 
+      else { await addDoc(collection(db, "timesheets"), { userId, month: monthStr, status, approvedBy: status === 'Approved' ? currentUser.nickname : null }); }
   };
 
-  // Helper to get status from DB state
   const getTimesheetStatusFromDB = (userId) => {
       const monthStr = currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
       return timesheets.find(t => t.userId === userId && t.month === monthStr) || { userId, month: monthStr, status: 'Draft' };
   };
 
-  // 1. LOGIC BAKI CUTI LIST (ADMIN)
   const getLeaveBalanceList = () => {
       return (
         <Card className="p-6">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Users size={20}/> Senarai Baki Cuti Staff</h3>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-                {users.map(u => {
-                    const approvedDays = leaves.filter(l => l.userId === u.id && l.status === 'Approved').reduce((acc, curr) => acc + curr.days, 0);
-                    const remaining = u.leaveBalance - approvedDays;
-                    return (
-                        <div key={u.id} className="flex justify-between items-center text-sm border-b pb-1">
-                            <span className="font-bold text-slate-700">{u.nickname}</span>
-                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">Baki: {remaining} / {u.leaveBalance}</span>
-                        </div>
-                    );
-                })}
-            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">{users.map(u => { const approvedDays = leaves.filter(l => l.userId === u.id && l.status === 'Approved').reduce((acc, curr) => acc + curr.days, 0); const remaining = u.leaveBalance - approvedDays; return (<div key={u.id} className="flex justify-between items-center text-sm border-b pb-1"><span className="font-bold text-slate-700">{u.nickname}</span><span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">Baki: {remaining} / {u.leaveBalance}</span></div>); })}</div>
         </Card>
       );
   };
@@ -597,13 +507,7 @@ export default function UltramapLiveV28() {
   const handleChangePassword = async (e) => {
       e.preventDefault();
       if(newPasswordData.new !== newPasswordData.confirm) return alert("Password tidak sama!");
-      if(newPasswordData.new.length < 6) return alert("Minima 6 karakter.");
-      try {
-          await updatePassword(auth.currentUser, newPasswordData.new);
-          alert("Berjaya tukar password! Sila login semula.");
-          setShowPasswordModal(false);
-          handleLogout();
-      } catch(err) { alert("Gagal: " + err.message); }
+      try { await updatePassword(auth.currentUser, newPasswordData.new); alert("Berjaya! Login semula."); setShowPasswordModal(false); handleLogout(); } catch(err) { alert("Gagal: " + err.message); }
   };
 
   const calculatePayroll = (userId, forMonthDate = currentDate) => {
@@ -612,8 +516,6 @@ export default function UltramapLiveV28() {
     const monthStr = forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
     const year = forMonthDate.getFullYear();
     const month = forMonthDate.getMonth();
-    
-    // Use fallback to 0 or auto calculation if null
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
     const socso = (user.customSocso !== null && user.customSocso !== undefined) ? user.customSocso : (user.baseSalary * 0.005 + 5);
 
@@ -646,13 +548,8 @@ export default function UltramapLiveV28() {
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
         <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3"><UltramapLogo className="h-10" /></div>
-            <div className="flex items-center gap-3">
-                <span className="text-xs font-bold hidden md:block uppercase text-slate-500">{currentUser.nickname}</span>
-                <button onClick={() => setShowPasswordModal(true)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full"><Settings size={16}/></button>
-                <button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-2 rounded font-bold flex items-center gap-2"><LogOut size={14}/> Keluar</button>
-            </div>
+            <div className="flex items-center gap-3"><span className="text-xs font-bold hidden md:block uppercase text-slate-500">{currentUser.nickname}</span><button onClick={() => setShowPasswordModal(true)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full"><Settings size={16}/></button><button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-2 rounded font-bold flex items-center gap-2"><LogOut size={14}/> Keluar</button></div>
         </nav>
-        
         <main className="max-w-6xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
                 <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
@@ -663,12 +560,9 @@ export default function UltramapLiveV28() {
                         <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
                             <div className="flex justify-between items-start"><p className="text-slate-400 text-xs mb-1 uppercase tracking-wider">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
                             <h2 className="text-2xl lg:text-3xl font-bold mt-1">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
+                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded text-[10px] font-bold flex items-center gap-2 w-fit mt-2"><Download size={12}/> Slip Gaji</button>
                         </div>
-                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center">
-                            <p className="text-slate-500 text-xs mb-1 uppercase tracking-wider">Baki Cuti</p>
-                            {/* 2. PAPARAN BAKI CUTI DENGAN FUNGSI BARU */}
-                            <h2 className="text-3xl font-bold text-slate-800">{getRemainingLeave(currentUser.id)} Hari</h2>
-                        </div>
+                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center"><p className="text-slate-500 text-xs mb-1 uppercase tracking-wider">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800">{getRemainingLeave(currentUser.id)} Hari</h2></div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -682,28 +576,18 @@ export default function UltramapLiveV28() {
                                         </div>
                                     </Card>
                                     
-                                    {/* 1. ADMIN - TETAPAN GAJI (LABEL ADDED & ACCESS FOR BOTH) */}
-                                    {currentUser.role === 'super_admin' && (
+                                    {(currentUser.role === 'super_admin' || currentUser.role === 'manager') && (
                                         <Card className="p-6">
                                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3>
                                             <div className="overflow-x-auto">
                                                 <table className="w-full text-sm text-left">
-                                                    <thead className="bg-slate-100 text-slate-500">
-                                                        <tr>
-                                                            <th className="p-3">Nama</th>
-                                                            <th className="p-3">Gaji (RM)</th>
-                                                            <th className="p-3">Elaun (RM)</th>
-                                                            <th className="p-3">Cuti (Hari)</th>
-                                                            <th className="p-3">Edit</th>
-                                                        </tr>
-                                                    </thead>
+                                                    <thead className="bg-slate-100 text-slate-500"><tr><th className="p-3">Nama</th><th className="p-3">Gaji (RM)</th><th className="p-3">Elaun (RM)</th><th className="p-3">Cuti (Hari)</th><th className="p-3">Edit</th></tr></thead>
                                                     <tbody className="divide-y">{users.map(u => (<tr key={u.id}><td className="p-3 font-medium">{u.nickname}</td><td className="p-3">{u.baseSalary}</td><td className="p-3">{u.fixedAllowance}</td><td className="p-3">{u.leaveBalance}</td><td className="p-3"><button onClick={() => setEditingUser(u)} className="text-blue-600 hover:underline">Edit</button></td></tr>))}</tbody>
                                                 </table>
                                             </div>
                                         </Card>
                                     )}
                                     
-                                    {/* ADMIN: LEAVE BALANCE LIST (NEW PLACEMENT) */}
                                     {getLeaveBalanceList()}
 
                                     <Card className="p-6">
@@ -716,46 +600,26 @@ export default function UltramapLiveV28() {
                                             </div>
                                         ))}
                                         {leaves.filter(l => l.status === 'Pending').length === 0 && <p className="text-xs text-slate-400 italic">Tiada permohonan.</p>}
-                                        
-                                        {/* 2. ADMIN - HISTORY CUTI (MOVED HERE) */}
                                         <LeaveHistoryViewer users={users} leaves={leaves} />
                                     </Card>
                                 </>
                             ) : (
-                                <TimesheetWidget 
-                                    targetUserId={currentUser.id} 
-                                    currentDate={currentDate} 
-                                    customSubmissionDate={settings.customSubmissionDate} 
-                                    attendance={attendance} 
-                                    setAttendance={toggleAttendanceDB} 
-                                    tsStatus={getTimesheetStatusFromDB(currentUser.id)} 
-                                    updateTimesheetStatus={updateTimesheetStatusDB} 
-                                    isAdminView={false} 
-                                />
+                                <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(currentUser.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
                             )}
                         </div>
                         <div className="space-y-6">
                             {(currentUser.role === 'staff') && <LeaveForm currentUser={currentUser} leaves={leaves} setLeaves={submitLeaveDB} deleteLeaveDB={deleteLeaveDB} />}
-                            
                             {(currentUser.role === 'super_admin' || currentUser.role === 'manager') && (
-                                <div>
-                                    <h3 className="font-bold text-lg text-slate-700 mb-4">Timesheet Staff</h3>
-                                    <div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-emerald-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak & Luluskan</button>)}</Card>))}</div>
-                                </div>
+                                <div><h3 className="font-bold text-lg text-slate-700 mb-4">Timesheet Staff</h3><div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><div className="flex gap-2 mt-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-slate-500 py-2 bg-slate-100 rounded font-bold">Tutup</button><button className="flex-1 text-xs text-white py-2 bg-emerald-600 rounded font-bold" onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')}>Luluskan</button></div></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 text-slate-600 py-2 rounded text-xs font-bold hover:bg-slate-200">Semak & Luluskan</button>)}</Card>))}</div></div>
                             )}
                         </div>
                     </div>
-                    {/* 4. SENARAI SLIP GAJI DI BAWAH (UNTUK SEMUA) */}
                     <PayslipFolderSystem currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} timesheetStatus={getTimesheetStatusFromDB(currentUser.id)} />
                 </div>
             )}
             
             {editingUser && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6"><h3 className="font-bold text-lg mb-4">Edit: {editingUser.nickname}</h3><form onSubmit={(e) => { e.preventDefault(); updateUserDB(editingUser); }} className="space-y-3">
-                    <div><label className="block text-xs font-bold text-slate-500 mb-1">Gaji Kasar (RM)</label><input type="number" className="border w-full p-2 rounded" value={editingUser.baseSalary} onChange={e => setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
-                    <div><label className="block text-xs font-bold text-slate-500 mb-1">Elaun Tetap (RM)</label><input type="number" className="border w-full p-2 rounded" value={editingUser.fixedAllowance} onChange={e => setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} /></div>
-                    <div><label className="block text-xs font-bold text-slate-500 mb-1">Jumlah Cuti (Hari)</label><input type="number" className="border w-full p-2 rounded" value={editingUser.leaveBalance} onChange={e => setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
-                    <div className="bg-slate-50 p-3 rounded border space-y-2"><p className="text-xs font-bold text-slate-700">Potongan Manual (Kosong = Auto)</p><div><label className="text-xs text-slate-500">KWSP (RM)</label><input type="number" className="w-full border p-2 rounded" placeholder="Auto (11%)" value={editingUser.customEpf || ''} onChange={e => setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div><div><label className="text-xs text-slate-500">SOCSO (RM)</label><input type="number" className="w-full border p-2 rounded" placeholder="Auto" value={editingUser.customSocso || ''} onChange={e => setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div></div><div className="flex gap-2"><button type="button" onClick={() => setEditingUser(null)} className="flex-1 bg-slate-200 py-2 rounded">Cancel</button><button className="flex-1 bg-blue-600 text-white py-2 rounded">Save</button></div></form></Card></div>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6"><h3 className="font-bold text-lg mb-4">Edit: {editingUser.nickname}</h3><form onSubmit={(e) => { e.preventDefault(); updateUserDB(editingUser); }} className="space-y-3"><div><label className="block text-xs font-bold text-slate-500 mb-1">Gaji Kasar (RM)</label><input type="number" className="border w-full p-2 rounded" value={editingUser.baseSalary} onChange={e => setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div><div><label className="block text-xs font-bold text-slate-500 mb-1">Elaun Tetap (RM)</label><input type="number" className="border w-full p-2 rounded" value={editingUser.fixedAllowance} onChange={e => setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} /></div><div><label className="block text-xs font-bold text-slate-500 mb-1">Jumlah Cuti (Hari)</label><input type="number" className="border w-full p-2 rounded" value={editingUser.leaveBalance} onChange={e => setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div><div className="bg-slate-50 p-3 rounded border space-y-2"><p className="text-xs font-bold text-slate-700">Potongan Manual (Kosong = Auto)</p><div><label className="text-xs text-slate-500">KWSP (RM)</label><input type="number" className="w-full border p-2 rounded" placeholder="Auto (11%)" value={editingUser.customEpf || ''} onChange={e => setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div><div><label className="text-xs text-slate-500">SOCSO (RM)</label><input type="number" className="w-full border p-2 rounded" placeholder="Auto" value={editingUser.customSocso || ''} onChange={e => setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div></div><div className="flex gap-2"><button type="button" onClick={() => setEditingUser(null)} className="flex-1 bg-slate-200 py-2 rounded">Cancel</button><button className="flex-1 bg-blue-600 text-white py-2 rounded">Save</button></div></form></Card></div>
             )}
             {showPasswordModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-sm p-6"><h3 className="font-bold text-lg mb-4">Tukar Password</h3><form onSubmit={handleChangePassword} className="space-y-3"><div><label className="text-xs font-bold text-slate-500">Password Baru</label><input type="password" required className="w-full border p-2 rounded" onChange={e => setNewPasswordData({...newPasswordData, new: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500">Sahkan Password</label><input type="password" required className="w-full border p-2 rounded" onChange={e => setNewPasswordData({...newPasswordData, confirm: e.target.value})} /></div><div className="flex gap-2 pt-2"><button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 bg-slate-200 py-2 rounded">Batal</button><button className="flex-1 bg-blue-600 text-white py-2 rounded">Tukar</button></div></form></Card></div>
