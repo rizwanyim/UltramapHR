@@ -25,7 +25,7 @@ try {
   console.error("Firebase Init Error:", e);
 }
 
-// --- DATA AWAL (SEED) ---
+// --- DATA AWAL ---
 const SEED_USERS = [
   { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
   { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
@@ -79,22 +79,6 @@ const Badge = ({ status }) => {
   return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${styles[status] || styles.Pending}`}>{status}</span>;
 };
 
-// --- HELPER FUNCTIONS ---
-const calculateLeaveDuration = (startDate, endDate) => {
-  if (!startDate || !endDate) return 0;
-  let count = 0;
-  let current = new Date(startDate);
-  const end = new Date(endDate);
-  while (current <= end) {
-    const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
-    const isSunday = current.getDay() === 0;
-    const isPublicHoliday = JOHOR_HOLIDAYS.some(h => h.date === dateStr);
-    if (!isSunday && !isPublicHoliday) count++;
-    current.setDate(current.getDate() + 1);
-  }
-  return count;
-};
-
 const UltramapLogo = ({ className = "h-10" }) => (
   <img 
     src="/logo.png" 
@@ -107,7 +91,7 @@ const UltramapLogo = ({ className = "h-10" }) => (
   />
 );
 
-// --- PAYSLIP DESIGN (FINAL PRINT FIX) ---
+// --- PAYSLIP DESIGN (VERSION 36.2 FIXED) ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
@@ -133,12 +117,12 @@ const PayslipDesign = ({ data, user }) => {
       
       <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:scale-[0.96] print:origin-top-left flex flex-col box-border overflow-hidden">
         
-        {/* pb-[65mm] ensures enough buffer to never overlap the absolute footer */}
-        <div className="flex-grow pb-[65mm]">
+        {/* pb-[70mm] sebagai zon selamat untuk elakkan pertindihan footer */}
+        <div className="flex-grow pb-[70mm]">
             <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
               <div><UltramapLogo className="h-24" /></div> 
               <div className="text-right">
-                <p className="font-bold uppercase text-xs mb-1 text-slate-500 font-sans">Private & Confidential</p>
+                <p className="font-bold uppercase text-xs mb-1 text-slate-500">Private & Confidential</p>
                 <h2 className="text-xl font-bold text-slate-800 tracking-wide font-sans text-right uppercase">ULTRAMAP SOLUTION</h2>
                 <p className="text-[10px] text-slate-400 font-sans text-right uppercase">Penyata Gaji Bulanan</p>
               </div>
@@ -148,7 +132,7 @@ const PayslipDesign = ({ data, user }) => {
                 <div className="space-y-3 w-1/2">
                     <div className="flex items-center">
                         <span className="text-slate-500 text-sm w-32 font-normal uppercase">Name</span> 
-                        <span className="uppercase font-bold text-sm truncate">: {user.name}</span>
+                        <span className="uppercase font-semibold text-sm truncate">: {user.name}</span>
                     </div>
                     <div className="flex items-center">
                         <span className="text-slate-500 text-sm w-32 font-normal uppercase">I/C No</span>
@@ -157,12 +141,12 @@ const PayslipDesign = ({ data, user }) => {
                 </div>
                 <div className="space-y-3 w-1/2 pl-8 border-l border-dashed border-slate-200">
                     <div className="flex items-center text-right md:text-left">
-                        <span className="text-slate-500 text-sm w-32 font-normal uppercase">Job Title</span>
+                        <span className="text-slate-500 text-sm w-32 font-normal tracking-tight uppercase">Job Title</span>
                         <span className="uppercase font-semibold text-sm">: {user.position}</span>
                     </div>
                     <div className="flex items-center text-right md:text-left">
-                        <span className="text-slate-500 text-sm w-32 font-normal uppercase">Payslip For</span> 
-                        <span className="uppercase font-bold text-sm">: {data.month}</span>
+                        <span className="text-slate-500 text-sm w-32 font-normal tracking-tight uppercase">Payslip For</span> 
+                        <span className="uppercase font-semibold text-sm">: {data.month}</span>
                     </div>
                 </div>
             </div>
@@ -188,7 +172,7 @@ const PayslipDesign = ({ data, user }) => {
                 <div>
                   <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm font-sans text-slate-700">Deduction (RM)</div>
                   <div className="space-y-2 text-sm font-sans">
-                    <div className="flex justify-between"><span>EPF</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>EPF (KWSP)</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
                     <div className="flex justify-between"><span>SOCSO</span><span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span></div>
                   </div>
                 </div>
@@ -198,16 +182,17 @@ const PayslipDesign = ({ data, user }) => {
               </div>
             </div>
 
-            <div className="bg-slate-100 border-y-4 border-slate-800 py-4 px-8 flex justify-between items-center mt-4">
+            <div className="bg-slate-100 border-y-4 border-slate-800 py-5 px-8 flex justify-between items-center mt-4">
               <span className="font-bold text-lg uppercase tracking-widest text-slate-700 font-sans tracking-tight">Net Pay (Gaji Bersih)</span>
               <span className="font-bold text-2xl text-slate-900 font-sans tracking-tight">RM {netPay.toFixed(2)}</span>
             </div>
         </div>
 
+        {/* Footer */}
         <div className="absolute bottom-8 left-0 right-0 text-center px-12 pointer-events-none">
             <div className="border-t border-slate-200 pt-3">
-                <p className="text-[10px] text-slate-400 leading-tight italic font-sans">This monthly salary slip is electronically generated and does not require any signature.</p>
-                <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest font-sans">ULTRAMAP SOLUTION (JM0876813-V)</p>
+                <p className="text-[10px] text-slate-400 leading-tight italic font-sans uppercase">This monthly salary slip is electronically generated and does not require any signature.</p>
+                <p className="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-widest font-sans">ULTRAMAP SOLUTION (JM0876813-V)</p>
             </div>
         </div>
         
@@ -221,7 +206,7 @@ const PayslipDesign = ({ data, user }) => {
   );
 };
 
-// --- TIMESHEET WIDGET (WITH SWIPE & REMARK) ---
+// --- TIMESHEET WIDGET ---
 const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, attendance, setAttendance, tsStatus, updateTimesheetStatus, isAdminView }) => {
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false);
@@ -233,16 +218,10 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   const displayYear = displayDate.getFullYear();
   const displayMonth = displayDate.getMonth();
   const getMonthStr = (d) => d.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
-  const getLastDayOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-
-  const autoLastDay = getLastDayOfMonth(currentDate);
-  const effectiveOpenDate = customSubmissionDate ? customSubmissionDate : autoLastDay;
-  const isSubmissionOpen = currentDate.getDate() >= effectiveOpenDate;
-  const canSubmit = isSubmissionOpen && (tsStatus.status === 'Draft' || tsStatus.status === 'Rejected');
   
   const handleToggle = (day) => {
     const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    if (JOHOR_HOLIDAYS.find(h => h.date === dateStr)) return;
+    if (JOHOR_HOLIDAYS.some(h => h.date === dateStr)) return;
 
     let isLocked = false;
     if (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) isLocked = true;
@@ -293,27 +272,32 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   const dayArray = Array.from({ length: new Date(displayYear, displayMonth + 1, 0).getDate() }, (_, i) => i + 1);
   const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay();
   const emptySlots = Array.from({ length: firstDayOfMonth });
-  let displayCount = attendance.filter(a => {
+  const displayCount = attendance.filter(a => {
       const d = new Date(a.date);
       return a.userId === targetUserId && d.getMonth() === displayMonth && d.getFullYear() === displayYear;
   }).length;
 
+  const autoLastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const effectiveOpenDate = customSubmissionDate ? customSubmissionDate : autoLastDay;
+  const isSubmissionOpen = currentDate.getDate() >= effectiveOpenDate;
+  const canSubmit = isSubmissionOpen && (tsStatus.status === 'Draft' || tsStatus.status === 'Rejected');
+
   return (
     <Card className="p-6 relative">
       <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-lg flex items-center gap-2 text-slate-700"><Calendar size={20} /> Timesheet</h3>
+          <h3 className="font-bold text-lg flex items-center gap-2 text-slate-700 font-sans"><Calendar size={20} /> Timesheet</h3>
           <div className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200">
               <button onClick={() => setSwipeIndex(Math.max(-6, swipeIndex - 1))} className={`p-1.5 rounded-full ${swipeIndex > -6 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronLeft size={16} /></button>
               <span className="text-[10px] font-bold px-3 text-slate-600 uppercase min-w-[80px] text-center font-sans">{getMonthStr(displayDate)}</span>
               <button onClick={() => setSwipeIndex(Math.min(1, swipeIndex + 1))} className={`p-1.5 rounded-full ${swipeIndex < 1 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronRight size={16} /></button>
           </div>
       </div>
-      {tsStatus.approvedBy && (<div className="mb-2 flex justify-end"><span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded flex items-center gap-1"><ShieldCheck size={10} /> Disahkan oleh: <b>{tsStatus.approvedBy}</b></span></div>)}
-      <div className="mb-4"><div className="grid grid-cols-7 gap-1 font-sans">{['A','I','S','R','K','J','S'].map(d => (<div key={d} className="text-center text-[10px] font-bold text-slate-400 mb-1">{d}</div>))}{emptySlots.map((_, i) => <div key={`empty-${i}`}></div>)}{dayArray.map(day => {
+      {tsStatus.approvedBy && (<div className="mb-2 flex justify-end"><span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded flex items-center gap-1 font-sans"><ShieldCheck size={10} /> Disahkan oleh: <b>{tsStatus.approvedBy}</b></span></div>)}
+      <div className="mb-4"><div className="grid grid-cols-7 gap-1 font-sans">{['A','I','S','R','K','J','S'].map(d => (<div key={d} className="text-center text-[10px] font-bold text-slate-400 mb-1 font-sans uppercase">{d}</div>))}{emptySlots.map((_, i) => <div key={`empty-${i}`}></div>)}{dayArray.map(day => {
             const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const entry = attendance.find(a => a.date === dateStr && a.userId === targetUserId && a.type === 'site');
             const isSite = !!entry;
-            const isHoliday = JOHOR_HOLIDAYS.find(h => h.date === dateStr);
+            const isHoliday = JOHOR_HOLIDAYS.some(h => h.date === dateStr);
             const isSunday = new Date(displayYear, displayMonth, day).getDay() === 0;
             let isVisualLock = (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) || (!isAdminView && (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved'));
             let btnClass = isHoliday ? "bg-orange-100 text-orange-600 border-orange-200 cursor-not-allowed font-bold" : isSite ? (isVisualLock ? "bg-slate-400 text-white border-slate-500" : "bg-emerald-500 text-white shadow-md border-emerald-600") : isSunday ? "bg-slate-200 text-slate-400 border-slate-300" : isVisualLock ? "opacity-50 cursor-not-allowed bg-slate-50 text-slate-300" : "bg-white text-slate-500 border-slate-100 hover:border-blue-300";
@@ -325,64 +309,13 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             </button>;
       })}</div></div>
       <div className="mt-auto flex justify-between items-center border-t pt-4"><div><p className="text-xs text-slate-500 uppercase font-bold font-sans">Total Hari Site</p><p className="text-xl font-bold text-emerald-600 font-sans">{displayCount} Hari</p></div>
-      {!isAdminView && swipeIndex === 0 && !isPastCutoff && tsStatus.status !== 'Submitted' && tsStatus.status !== 'Approved' && (<button disabled={!canSubmit} onClick={canSubmit ? () => updateTimesheetStatus(targetUserId, 'Submitted') : undefined} className={`px-4 py-2 rounded font-bold text-xs shadow-lg transition-all ${canSubmit ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>{isSubmissionOpen ? "Hantar" : `Buka ${effectiveOpenDate}hb`}</button>)}
+      {!isAdminView && swipeIndex === 0 && !isPastCutoff && tsStatus.status !== 'Submitted' && tsStatus.status !== 'Approved' && (<button disabled={!canSubmit} onClick={canSubmit ? () => updateTimesheetStatus(targetUserId, 'Submitted') : undefined} className={`px-4 py-2 rounded font-bold text-xs shadow-lg transition-all ${canSubmit ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-sans uppercase`}>{isSubmissionOpen ? "Hantar" : `Buka ${effectiveOpenDate}hb`}</button>)}
       </div>
       {isRemarkModalOpen && (
-          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"><Card className="w-full max-w-sm p-6 shadow-2xl animate-in zoom-in duration-200"><div className="flex justify-between items-start mb-4"><div><h4 className="font-bold text-slate-800 text-lg uppercase font-sans">Nota Kehadiran</h4><p className="text-xs text-slate-500 font-sans">{selectedDayInfo?.day}hb {getMonthStr(displayDate)}</p></div><button onClick={() => setIsRemarkModalOpen(false)} className="p-1 hover:bg-slate-100 rounded-full transition-colors"><X size={20}/></button></div><div className="space-y-4"><div><label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">Lokasi / Kerja Site</label><textarea className="w-full border-2 border-slate-200 rounded-xl p-3 text-sm focus:border-blue-500 outline-none transition-all font-sans" rows="3" placeholder="Lokasi site hari ini..." value={tempRemark} onChange={(e) => setTempRemark(e.target.value)} readOnly={isAdminView} /></div>{!isAdminView ? (<div className="flex gap-2 font-sans">{selectedDayInfo?.existingRemark !== undefined && (<button onClick={handleDeleteEntry} className="flex-none p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"><Trash2 size={20}/></button>)}<button onClick={handleSaveRemark} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2"><Save size={18}/> Simpan</button></div>) : (<p className="text-[10px] text-slate-400 italic text-center font-sans uppercase">Paparan semakan admin sahaja</p>)}</div></Card></div>
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"><Card className="w-full max-w-sm p-6 shadow-2xl animate-in zoom-in duration-200"><div className="flex justify-between items-start mb-4"><div><h4 className="font-bold text-slate-800 text-lg uppercase font-sans">Nota Kehadiran</h4><p className="text-xs text-slate-500 font-sans">{selectedDayInfo?.day}hb {getMonthStr(displayDate)}</p></div><button onClick={() => setIsRemarkModalOpen(false)} className="p-1 hover:bg-slate-100 rounded-full transition-colors"><X size={20}/></button></div><div className="space-y-4"><div><label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans tracking-widest uppercase">Lokasi / Kerja Site</label><textarea className="w-full border-2 border-slate-200 rounded-xl p-3 text-sm focus:border-blue-500 outline-none transition-all font-sans" rows="3" placeholder="Lokasi site hari ini..." value={tempRemark} onChange={(e) => setTempRemark(e.target.value)} readOnly={isAdminView} /></div>{!isAdminView ? (<div className="flex gap-2 font-sans">{selectedDayInfo?.existingRemark !== undefined && (<button onClick={handleDeleteEntry} className="flex-none p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"><Trash2 size={20}/></button>)}<button onClick={handleSaveRemark} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase text-sm"><Save size={18}/> Simpan</button></div>) : (<p className="text-[10px] text-slate-400 italic text-center font-sans uppercase">Paparan semakan admin sahaja</p>)}</div></Card></div>
       )}
     </Card>
   );
-};
-
-// --- PAYSLIP ARCHIVE FOLDER ---
-const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus }) => {
-    const today = new Date();
-    const [selectedYear, setSelectedYear] = useState(today.getFullYear()); 
-
-    const getAvailableMonths = (year) => {
-        const months = [];
-        const currentMonth = today.getMonth(); 
-        if (year === 2025) { months.push(new Date(2025, 11, 1)); } 
-        else {
-            for (let i = 0; i <= currentMonth; i++) {
-                const d = new Date(year, i, 1);
-                if (d > today) break;
-                if (currentUser.role === 'staff' && year === today.getFullYear()) { if (i === currentMonth && timesheetStatus.status !== 'Approved') continue; }
-                months.push(d);
-            }
-        }
-        return months;
-    };
-    const availableMonths = getAvailableMonths(selectedYear);
-    return (
-        <div className="mt-8 pt-8 border-t no-print">
-            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-tight"><FileText size={20}/> Arkib Slip Gaji</h3>
-            <div className="flex gap-4 mb-4">
-                {[2025, 2026].map(year => (
-                    <button key={year} onClick={() => setSelectedYear(year)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all font-sans ${selectedYear === year ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
-                        {selectedYear === year ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">{year}</span>
-                    </button>
-                ))}
-            </div>
-            <div className="bg-slate-50 p-4 rounded-b-lg rounded-tr-lg border border-slate-200 min-h-[100px]">
-                {availableMonths.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {availableMonths.map((date, idx) => (
-                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group shadow-sm">
-                                <div className="flex items-center gap-2">
-                                    <FileText size={16} className="text-red-500"/>
-                                    <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600 uppercase font-sans">
-                                        {date.toLocaleDateString('ms-MY', { month: 'short' })}
-                                    </span>
-                                </div>
-                                <Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
-                            </button>
-                        ))}
-                    </div>
-                ) : <div className="text-center text-slate-400 py-4 text-xs italic font-sans">Tiada rekod tersedia.</div>}
-            </div>
-        </div>
-    );
 };
 
 // --- MAIN APP ---
@@ -396,6 +329,7 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [viewedPayslip, setViewedPayslip] = useState(null);
+  const [currentDate] = useState(new Date()); 
   const [hideSalary, setHideSalary] = useState(false);
   const [showAdminTimesheet, setShowAdminTimesheet] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -441,13 +375,13 @@ export default function App() {
       else { await addDoc(collection(db, "timesheets"), { userId, month: monthStr, status, approvedBy: status === 'Approved' ? currentUser.nickname : null }); }
   };
 
-  const calculatePayroll = (userId, forMonthDate = new Date()) => {
+  const calculatePayroll = (userId, forMonthDate = currentDate) => {
     const user = users.find(u => u.id === userId);
     if (!user) return {};
     const monthStr = forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
     const socso = (user.customSocso !== null && user.customSocso !== undefined) ? user.customSocso : (user.baseSalary * 0.005 + 5);
-    if (user.role !== 'staff') return { month: monthStr, basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: 0, rolloverNote: "Gaji Tetap", otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance - epf - socso) };
+    if (user.role !== 'staff') return { month: monthStr, basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: 0, rolloverNote: "", otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance - epf - socso) };
     const siteDays = attendance.filter(a => {
         const d = new Date(a.date);
         return a.userId === userId && d.getMonth() === forMonthDate.getMonth() && d.getFullYear() === forMonthDate.getFullYear();
@@ -482,13 +416,17 @@ export default function App() {
     try { await updatePassword(auth.currentUser, newPasswordData.new); alert("Berjaya! Login semula."); setShowPasswordModal(false); handleLogout(); } catch(err) { alert("Gagal: " + err.message); }
   };
 
-  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans"><Card className="w-full max-w-sm p-8 bg-white shadow-2xl"><div className="flex justify-center mb-6"><UltramapLogo /></div><h2 className="text-center font-bold text-slate-800 mb-6 tracking-tight uppercase">Log Masuk HR System</h2><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold transition-all hover:bg-blue-700 shadow-md uppercase">Masuk</button></form><div className="mt-8 text-center"><button onClick={handleSeedData} className="text-xs text-slate-400 underline">Setup Database</button></div></Card></div>;
+  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans"><Card className="w-full max-w-sm p-8 bg-white shadow-2xl"><div className="flex justify-center mb-6"><UltramapLogo /></div><h2 className="text-center font-bold text-slate-800 mb-6 tracking-tight uppercase">Log Masuk HR System</h2><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold transition-all hover:bg-blue-700 shadow-md uppercase">Masuk</button></form><div className="mt-8 text-center"><button onClick={handleSeedData} className="text-xs text-slate-400 underline uppercase tracking-widest">Setup Database</button></div></Card></div>;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
         <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm print:hidden">
             <div className="flex items-center gap-3"><UltramapLogo /></div>
-            <div className="flex items-center gap-3"><span className="text-xs font-bold hidden md:block uppercase text-slate-500">{currentUser.nickname}</span><button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold hover:bg-slate-300 transition-colors shadow-sm">Log Keluar</button></div>
+            <div className="flex items-center gap-3">
+                <span className="text-xs font-bold hidden md:block uppercase text-slate-500">{currentUser.nickname}</span>
+                <button onClick={() => setShowPasswordModal(true)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><Settings size={16}/></button>
+                <button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold hover:bg-slate-300 transition-colors shadow-sm font-sans uppercase">Keluar</button>
+            </div>
         </nav>
         
         <main className="max-w-7xl mx-auto p-4 lg:p-8">
@@ -501,7 +439,7 @@ export default function App() {
                         <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
                             <div className="flex justify-between items-start"><p className="text-slate-400 text-xs mb-1 uppercase tracking-wider font-sans">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white transition-colors">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
                             <h2 className="text-2xl lg:text-3xl font-bold mt-1 font-sans tracking-tight">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
-                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded text-[10px] font-bold flex items-center gap-2 w-fit mt-2 shadow-sm uppercase"><Download size={12}/> Slip Gaji</button>
+                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded text-[10px] font-bold flex items-center gap-2 w-fit mt-2 shadow-sm uppercase font-sans"><Download size={12}/> Slip Gaji</button>
                         </div>
                         <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center"><p className="text-slate-500 text-xs mb-1 uppercase tracking-wider font-sans">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800 font-sans tracking-tight">{getRemainingLeave(currentUser.id)} Hari</h2></div>
                     </div>
@@ -509,28 +447,87 @@ export default function App() {
                         <div className="space-y-6">
                             {(currentUser.role !== 'staff') ? (
                                 <>
-                                    <Card className="p-6 border-l-4 border-l-blue-600"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700"><Settings size={20} className="text-slate-400"/> Tetapan Cutoff</h3><input type="number" min="1" max="31" value={settings.customSubmissionDate || ''} onChange={(e) => updateSettingsDB(e.target.value ? Number(e.target.value) : null)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" /></Card>
-                                    <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 font-sans uppercase"><tr><th className="p-2 text-[10px]">Nama</th><th className="p-2 text-[10px]">Basic</th><th className="p-2 text-[10px]">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b font-sans hover:bg-slate-50 transition-colors"><td className="p-2 font-bold">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px]">Edit</button></td></tr>))}</tbody></table></Card>
+                                    <Card className="p-6 border-l-4 border-l-blue-600"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700 uppercase tracking-wider text-sm"><Settings size={20} className="text-slate-400"/> Tetapan Cutoff</h3><input type="number" value={settings.customSubmissionDate || ''} onChange={(e) => updateSettingsDB(e.target.value ? Number(e.target.value) : null)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" /></Card>
+                                    <Card className="p-6"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700 uppercase tracking-wider text-sm"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 font-sans uppercase"><tr><th className="p-2 text-[10px]">Nama</th><th className="p-2 text-[10px]">Basic</th><th className="p-2 text-[10px]">Cuti</th><th className="p-2 text-[10px]">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b font-sans hover:bg-slate-50 transition-colors"><td className="p-2 font-bold">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td className="p-2 text-center"><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px]">Edit</button></td></tr>))}</tbody></table></Card>
                                 </>
                             ) : (
                                 <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(currentUser.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
                             )}
-                            <Card className="p-6"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-tight"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Dihantar!");}} className="space-y-2"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans" required/><input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans" required/></div><input name="r" placeholder="Tujuan" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans" required/><button className="bg-slate-800 text-white w-full py-2 rounded font-bold shadow transition-colors hover:bg-slate-900 uppercase text-sm">Hantar Permohonan</button></form></Card>
+                            <Card className="p-6"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-tight uppercase tracking-wider text-sm"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Dihantar!");}} className="space-y-3"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans" required/><input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans" required/></div><input name="r" placeholder="Tujuan" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans" required/><button className="bg-slate-800 text-white w-full py-2 rounded font-bold shadow transition-colors hover:bg-slate-900 uppercase text-xs uppercase tracking-widest">Hantar Permohonan</button></form></Card>
                         </div>
                         <div className="space-y-6">
                             {(currentUser.role !== 'staff') && (
-                                <div><h3 className="font-bold text-lg text-slate-700 mb-4 uppercase tracking-tighter font-sans">Panel Timesheet Staff</h3><div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4 shadow-sm"><div className="flex justify-between items-center mb-2"><span className="font-bold font-sans text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2 animate-in fade-in duration-300"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><button onClick={() => setShowAdminTimesheet(false)} className="w-full text-xs text-red-500 mt-2 font-bold py-2 bg-red-50 rounded uppercase transition-colors hover:bg-red-100">Tutup Panel</button></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold font-sans hover:bg-slate-200 transition-colors uppercase">Semak & Luluskan</button>)}</Card>))}</div></div>
+                                <div><h3 className="font-bold text-lg text-slate-700 mb-4 uppercase tracking-tighter font-sans uppercase tracking-wider text-sm">Panel Timesheet Staff</h3><div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => (<Card key={staff.id} className="p-4 shadow-sm hover:shadow-md transition-shadow"><div className="flex justify-between items-center mb-2"><span className="font-bold font-sans text-slate-700">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (<div className="mt-2 animate-in fade-in duration-300"><TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} /><button onClick={() => setShowAdminTimesheet(false)} className="w-full text-xs text-red-500 mt-2 font-bold py-2 bg-red-50 rounded uppercase transition-colors hover:bg-red-100 font-sans tracking-widest">Tutup Panel</button></div>) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold font-sans hover:bg-slate-200 transition-colors uppercase font-sans tracking-widest text-[10px]">Semak & Luluskan</button>)}</Card>))}</div></div>
                             )}
-                            <Card className="p-6"><h3 className="font-bold mb-4 font-sans text-lg border-b pb-2 tracking-tight uppercase text-slate-700">Pengesahan Cuti</h3>{leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50"><div className="text-xs font-sans"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><div className="flex gap-1"><button onClick={()=>approveLeaveDB(leave.id,'Approved')} className="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold shadow transition-all hover:bg-emerald-700 uppercase">Lulus</button></div></div>))}{leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic font-sans">Tiada permohonan pending.</p>}</Card>
+                            <Card className="p-6"><h3 className="font-bold mb-4 font-sans text-lg border-b pb-2 tracking-tight uppercase text-slate-700 uppercase tracking-wider text-sm">Pengesahan Cuti</h3>{leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50"><div className="text-xs font-sans"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><div className="flex gap-1"><button onClick={()=>approveLeaveDB(leave.id,'Approved')} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow transition-all hover:bg-emerald-700 uppercase font-sans tracking-widest">Lulus</button></div></div>))}{leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic font-sans uppercase">Tiada permohonan pending.</p>}</Card>
                         </div>
                     </div>
                     <div className="print:hidden"><PayslipFolderSystem currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} timesheetStatus={getTimesheetStatusFromDB(currentUser.id)} /></div>
                 </div>
             )}
+            
             {editingUser && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden animate-in zoom-in duration-200"><Card className="w-full max-w-md p-6 shadow-2xl"><h3 className="font-bold mb-4 font-sans text-xl tracking-tight text-slate-800 border-b pb-2 uppercase">Edit Profil: {editingUser.nickname}</h3><form onSubmit={(e)=>{e.preventDefault(); updateUserDB(editingUser);}} className="space-y-4 font-sans"><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Elaun Tetap (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.fixedAllowance} onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide font-sans">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div><div className="bg-slate-50 p-3 rounded border"><div><label className="text-xs font-bold text-slate-400 uppercase tracking-tighter">KWSP Manual (RM)</label><input type="number" className="w-full border p-1 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div></div><div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold hover:bg-slate-200 transition-colors uppercase">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow-md hover:bg-blue-700 transition-all uppercase">Simpan</button></div></form></Card></div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden animate-in zoom-in duration-200"><Card className="w-full max-w-md p-6 shadow-2xl"><h3 className="font-bold mb-4 font-sans text-xl tracking-tight text-slate-800 border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={(e)=>{e.preventDefault(); updateUserDB(editingUser);}} className="space-y-4 font-sans"><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide uppercase tracking-widest">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide uppercase tracking-widest">Elaun Tetap (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.fixedAllowance} onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide font-sans uppercase tracking-widest">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div><div className="bg-slate-50 p-3 rounded border"><div><label className="text-xs font-bold text-slate-400 uppercase tracking-tighter uppercase tracking-widest">KWSP Manual (RM)</label><input type="number" className="w-full border p-1 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div></div><div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold hover:bg-slate-200 transition-colors uppercase text-xs uppercase tracking-widest">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow-md hover:bg-blue-700 transition-all uppercase text-xs uppercase tracking-widest">Simpan</button></div></form></Card></div>
+            )}
+
+            {showPasswordModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in zoom-in duration-200"><Card className="w-full max-w-sm p-6 shadow-2xl"><h3 className="font-bold text-lg mb-4 font-sans tracking-tight uppercase border-b pb-2 uppercase tracking-widest">Tukar Password</h3><form onSubmit={handleChangePassword} className="space-y-4"><div><label className="text-xs font-bold text-slate-500 uppercase uppercase tracking-widest">Password Baru</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all font-sans" onChange={e => setNewPasswordData({...newPasswordData, new: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase uppercase tracking-widest">Sahkan Password</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all font-sans" onChange={e => setNewPasswordData({...newPasswordData, confirm: e.target.value})} /></div><div className="flex gap-2 pt-2"><button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase transition-colors hover:bg-slate-200 uppercase tracking-widest text-xs">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow hover:bg-blue-700 transition-colors uppercase uppercase tracking-widest text-xs">Tukar</button></div></form></Card></div>
             )}
         </main>
     </div>
   );
 }
+
+// --- PAYSLIP ARCHIVE FOLDER ---
+const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus }) => {
+    const today = new Date();
+    const [selectedYear, setSelectedYear] = useState(today.getFullYear()); 
+
+    const getAvailableMonths = (year) => {
+        const months = [];
+        const currentMonth = today.getMonth(); 
+        if (year === 2025) {
+            months.push(new Date(2025, 11, 1)); 
+        } else {
+            for (let i = 0; i <= currentMonth; i++) {
+                const d = new Date(year, i, 1);
+                if (d > today) break;
+                if (currentUser.role === 'staff' && year === today.getFullYear()) {
+                   if (i === currentMonth && timesheetStatus.status !== 'Approved') continue;
+                }
+                months.push(d);
+            }
+        }
+        return months;
+    };
+    const availableMonths = getAvailableMonths(selectedYear);
+    return (
+        <div className="mt-8 pt-8 border-t no-print">
+            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-tight uppercase tracking-wider text-sm"><FileText size={20}/> Arkib Slip Gaji</h3>
+            <div className="flex gap-4 mb-4">
+                {[2025, 2026].map(year => (
+                    <button key={year} onClick={() => setSelectedYear(year)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all font-sans ${selectedYear === year ? 'border-blue-600 text-blue-600 bg-blue-50 font-bold' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
+                        {selectedYear === year ? <FolderOpen size={18}/> : <Folder size={18}/>}<span className="font-bold">{year}</span>
+                    </button>
+                ))}
+            </div>
+            <div className="bg-slate-50 p-4 rounded-b-lg rounded-tr-lg border border-slate-200 min-h-[100px]">
+                {availableMonths.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {availableMonths.map((date, idx) => (
+                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all group shadow-sm">
+                                <div className="flex items-center gap-2">
+                                    <FileText size={16} className="text-red-500"/>
+                                    <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600 uppercase font-sans">
+                                        {date.toLocaleDateString('ms-MY', { month: 'short' })}
+                                    </span>
+                                </div>
+                                <Download size={14} className="text-slate-300 group-hover:text-blue-500"/>
+                            </button>
+                        ))}
+                    </div>
+                ) : <div className="text-center text-slate-400 py-4 text-xs italic font-sans uppercase">Tiada rekod tersedia.</div>}
+            </div>
+        </div>
+    );
+};
