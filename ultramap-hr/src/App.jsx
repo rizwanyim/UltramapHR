@@ -134,6 +134,9 @@ const PayslipDesign = ({ data, user }) => {
                     <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal tracking-tight uppercase tracking-wider text-right md:text-left">Payslip For</span><span className="uppercase font-semibold">: {data.month}</span></div>
                 </div>
             </div>
+            <div className="grid grid-cols-2 gap-16 mb-4 h-[250px]">
+              <div className="flex flex-col justify-between">
+                <div>
                     <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm font-sans text-slate-700 uppercase tracking-widest">Earnings (RM)</div>
                     <div className="space-y-2 text-sm font-sans">
                       <div className="flex justify-between"><span>BASIC SALARY</span><span className="font-semibold">{data.basicSalary.toFixed(2)}</span></div>
