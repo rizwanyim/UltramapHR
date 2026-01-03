@@ -79,11 +79,16 @@ const Badge = ({ status }) => {
   return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${styles[status] || styles.Pending}`}>{status}</span>;
 };
 
-const UltramapLogo = () => (
-  <div className="flex items-center gap-2">
-    <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center font-black italic text-white text-xl">U</div>
-    <span className="font-bold text-red-600 text-2xl tracking-tighter">ULTRAMAP</span>
-  </div>
+const UltramapLogo = ({ className = "h-10" }) => (
+  <img 
+    src="/logo.png" 
+    alt="ULTRAMAP SOLUTION" 
+    className={`${className} w-auto object-contain mx-auto lg:mx-0`} 
+    onError={(e) => {
+      e.target.style.display = 'none';
+      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl">ULTRAMAP</span>'; 
+    }}
+  />
 );
 
 // --- HELPER FUNCTIONS ---
@@ -129,16 +134,13 @@ const PayslipDesign = ({ data, user }) => {
                     <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal tracking-tight uppercase tracking-wider text-right md:text-left">Payslip For</span><span className="uppercase font-semibold">: {data.month}</span></div>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-16 mb-4 h-[250px]">
-              <div className="flex flex-col justify-between">
-                <div>
                     <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm font-sans text-slate-700 uppercase tracking-widest">Earnings (RM)</div>
                     <div className="space-y-2 text-sm font-sans">
                       <div className="flex justify-between"><span>BASIC SALARY</span><span className="font-semibold">{data.basicSalary.toFixed(2)}</span></div>
                       <div className="flex justify-between"><span>ALLOWANCE</span><span className="font-semibold">{data.allowance.toFixed(2)}</span></div>
                       <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span className="font-semibold">{data.mealAllowance.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-slate-400 italic font-medium"><span>OT ALLOWANCE</span><span className="font-semibold">{data.otAllowance.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-slate-400 italic font-medium"><span>BONUS</span><span className="font-semibold">{data.bonus.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-slate-400 font-medium"><span>OT ALLOWANCE</span><span className="font-semibold">{data.otAllowance.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-slate-400 font-medium"><span>BONUS</span><span className="font-semibold">{data.bonus.toFixed(2)}</span></div>
                     </div>
                 </div>
                 <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4 font-sans text-slate-900 uppercase"><span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span></div>
@@ -155,7 +157,7 @@ const PayslipDesign = ({ data, user }) => {
               </div>
             </div>
             <div className="bg-slate-100 border-y-4 border-slate-800 py-5 px-8 flex justify-between items-center mt-4">
-              <span className="font-bold text-lg uppercase tracking-widest text-slate-700 font-sans tracking-tight">NET PAY (GAJI BERSIH)</span>
+              <span className="font-bold text-lg uppercase tracking-widest text-slate-700 font-sans tracking-tight">NET PAY</span>
               <span className="font-bold text-2xl text-slate-900 font-sans tracking-tight">RM {netPay.toFixed(2)}</span>
             </div>
         </div>
@@ -291,7 +293,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
         </div>
       </div>
       <div className="mt-auto flex justify-between items-center border-t pt-4">
-        <div><p className="text-xs text-slate-500 uppercase font-bold font-sans tracking-widest uppercase tracking-tighter">Total Hari Site</p><p className="text-xl font-bold text-emerald-600 font-sans tracking-tight uppercase">{displayCount} Hari</p></div>
+        <div><p className="text-xs text-slate-500 uppercase font-bold font-sans tracking-widest uppercase tracking-tighter">Jumlah Hari Kerja</p><p className="text-xl font-bold text-emerald-600 font-sans tracking-tight uppercase">{displayCount} Hari</p></div>
         {showSubmitBtn && swipeIndex === 0 && (
             <button 
                 disabled={!isSubmissionOpen}
@@ -564,7 +566,7 @@ export default function App() {
                             <Card className="p-6 shadow-sm uppercase tracking-widest">
                                 <h3 className="font-bold mb-4 font-sans text-lg border-b pb-2 tracking-tight uppercase text-slate-700 uppercase tracking-wider text-sm tracking-widest font-sans uppercase tracking-widest">Pengesahan Cuti</h3>
                                 {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={`leave-p-${leave.id}`} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 shadow-inner transition-all hover:border-emerald-200 font-sans uppercase tracking-widest"><div className="text-xs font-sans uppercase tracking-widest"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><div className="flex gap-1 font-sans uppercase tracking-widest"><button onClick={()=>approveLeaveDB(leave.id,'Approved')} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow transition-all hover:bg-emerald-700 uppercase font-sans tracking-widest uppercase tracking-widest shadow-emerald-100">Lulus</button></div></div>))}
-                                {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic font-sans uppercase tracking-widest uppercase tracking-widest">Tiada permohonan pending.</p>}
+                                {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic font-sans uppercase tracking-widest uppercase tracking-widest">Tiada permohonan cuti.</p>}
                                 {currentUser.role !== 'staff' && <LeaveHistoryViewer users={users} leaves={leaves} />}
                             </Card>
                         </div>
