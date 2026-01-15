@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "firebase/auth";
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
-import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key, History, FolderOpen, Folder, ShieldCheck, MapPin } from 'lucide-react';
+import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key, History, FolderOpen, Folder, ShieldCheck, MapPin, Loader2, AlertTriangle } from 'lucide-react';
 
 // --- 1. CONFIG FIREBASE ---
 const firebaseConfig = {
@@ -86,12 +86,11 @@ const UltramapLogo = ({ className = "h-10" }) => (
     className={`${className} w-auto object-contain mx-auto lg:mx-0`} 
     onError={(e) => {
       e.target.style.display = 'none';
-      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl">ULTRAMAP</span>'; 
+      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl font-sans tracking-tighter">ULTRAMAP</span>'; 
     }}
   />
 );
 
-// --- HELPER FUNCTIONS ---
 const calculateLeaveDuration = (startDate, endDate) => {
   if (!startDate || !endDate) return 0;
   let count = 0;
@@ -105,7 +104,6 @@ const calculateLeaveDuration = (startDate, endDate) => {
   return count;
 };
 
-// --- PAYSLIP DESIGN ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
@@ -114,14 +112,14 @@ const PayslipDesign = ({ data, user }) => {
   return (
     <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:bg-white print:p-0 print:m-0 print:overflow-hidden">
       <style>{`@media print { @page { size: A4 landscape; margin: 0; } body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; } }`}</style>
-      <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:scale-[0.96] print:origin-top-left flex flex-col box-border overflow-hidden">
+      <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:scale-[0.96] print:origin-top-left flex flex-col box-border overflow-hidden font-sans">
         <div className="flex-grow pb-[70mm]">
             <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
               <div><UltramapLogo /></div> 
               <div className="text-right">
                 <p className="font-bold uppercase text-xs mb-1 text-slate-500 font-sans tracking-widest text-right uppercase">Private & Confidential</p>
                 <h2 className="text-xl font-bold text-slate-800 tracking-wide font-sans text-right uppercase">ULTRAMAP SOLUTION</h2>
-                <p className="text-[10px] text-slate-400 font-sans text-right uppercase tracking-tighter uppercase">Penyata Gaji Bulanan</p>
+                <p className="text-[10px] text-slate-400 font-sans text-right uppercase tracking-tighter uppercase">Monthly Salary Slip</p>
               </div>
             </div>
             <div className="flex justify-between mb-8 border-b border-slate-300 pb-6 gap-10">
@@ -176,7 +174,6 @@ const PayslipDesign = ({ data, user }) => {
   );
 };
 
-// --- TIMESHEET WIDGET (HISTORY SWIPE & REMARK) ---
 const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, attendance, setAttendance, tsStatus, updateTimesheetStatus, isAdminView }) => {
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false);
@@ -196,7 +193,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
     const isCurrentMonthView = swipeIndex === 0;
     const entry = attendance.find(a => a.date === dateStr && a.userId === targetUserId);
 
-    // ADMIN VIEW ATAU HISTORY: Lihat sahaja
     if (isAdminView || !isCurrentMonthView) {
         if (entry) {
             setSelectedDayInfo({ day, dateStr, existingRemark: entry.remark });
@@ -208,7 +204,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
         return; 
     }
 
-    // Locking Logic for Current Month
     let isLocked = false;
     if (isPastCutoff && day <= customSubmissionDate) isLocked = true;
     if (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved') isLocked = true;
@@ -413,6 +408,8 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
 // --- MAIN APP ---
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [authUser, setAuthUser] = useState(null); // Firebase Auth record
+  const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [leaves, setLeaves] = useState([]);
@@ -431,10 +428,23 @@ export default function App() {
   useEffect(() => {
     if (!auth) return;
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
       if (user) {
         const q = query(collection(db, "users"), where("email", "==", user.email));
-        onSnapshot(q, (snapshot) => { if (!snapshot.empty) setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); });
-      } else setCurrentUser(null);
+        onSnapshot(q, (snapshot) => { 
+          if (!snapshot.empty) {
+            setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); 
+            setLoading(false);
+          } else {
+            // Emel ada di Auth, tapi Profile Firestore tiada
+            setCurrentUser(null);
+            setLoading(false);
+          }
+        });
+      } else {
+        setCurrentUser(null);
+        setLoading(false);
+      }
     });
     onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
     onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
@@ -444,8 +454,25 @@ export default function App() {
     return () => unsubscribeAuth();
   }, []);
 
-  const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Gagal Log Masuk!"); } };
-  const handleLogout = () => signOut(auth);
+  const handleLogin = async (e) => { 
+    e.preventDefault(); 
+    setLoading(true);
+    console.log("Log masuk dimulakan untuk:", email);
+    try { 
+      const result = await signInWithEmailAndPassword(auth, email, password); 
+      console.log("Log masuk Auth berjaya:", result.user.email);
+    } catch (err) { 
+      console.error("Ralat Log Masuk:", err.code, err.message);
+      setLoading(false);
+      alert("Gagal Log Masuk! Sila periksa email dan kata laluan."); 
+    } 
+  };
+
+  const handleLogout = () => {
+      signOut(auth);
+      setAuthUser(null);
+      setCurrentUser(null);
+  };
 
   const toggleAttendanceDB = async (dateStr, userId, type, shouldDelete, remark = "") => {
       const existing = attendance.find(a => a.date === dateStr && a.userId === userId);
@@ -495,81 +522,159 @@ export default function App() {
   };
 
   const handleSeedData = async () => {
-    if (!confirm("Setup database asal?")) return;
-    await setDoc(doc(db, "settings", "global"), { customSubmissionDate: 20 });
-    for (const u of SEED_USERS) { 
-        const q = query(collection(db, "users"), where("email", "==", u.email));
-        const s = await getDocs(q);
-        if (s.empty) await addDoc(collection(db, "users"), u); 
+    if (!confirm("Setup database asal? Ini akan menambah profil baru ke dalam Firestore untuk emel-emel yang sudah didaftarkan.")) return;
+    setLoading(true);
+    try {
+      await setDoc(doc(db, "settings", "global"), { customSubmissionDate: 20 });
+      let addedCount = 0;
+      for (const u of SEED_USERS) { 
+          const q = query(collection(db, "users"), where("email", "==", u.email));
+          const s = await getDocs(q);
+          if (s.empty) {
+              await addDoc(collection(db, "users"), u); 
+              addedCount++;
+          }
+      }
+      alert(`Database berjaya dikemaskini! ${addedCount} profil baru ditambah.`);
+    } catch (err) {
+      alert("Gagal setup: " + err.message);
     }
-    alert("Database seeded!");
+    setLoading(false);
+  };
+
+  const handleLinkProfile = async () => {
+      setLoading(true);
+      const seedMatch = SEED_USERS.find(s => s.email === authUser.email);
+      if (seedMatch) {
+          try {
+              await addDoc(collection(db, "users"), seedMatch);
+              alert("Profil berjaya dihubungkan! Sila tunggu sebentar.");
+          } catch (err) {
+              alert("Ralat hubung: " + err.message);
+          }
+      } else {
+          alert("Emel anda tiada dalam senarai SEED_USERS. Sila hubungi Super Admin untuk pendaftaran manual.");
+      }
+      setLoading(false);
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if(newPasswordData.new !== newPasswordData.confirm) return alert("Password tidak sama!");
-    try { await updatePassword(auth.currentUser, newPasswordData.new); alert("Berjaya! Login semula."); setShowPasswordModal(false); handleLogout(); } catch(err) { alert("Gagal: " + err.message); }
+    try { await updatePassword(auth.currentUser, newPasswordData.new); alert("Berjaya! Sila log masuk semula."); setShowPasswordModal(false); handleLogout(); } catch(err) { alert("Gagal: " + err.message); }
   };
 
-  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans"><Card className="w-full max-w-sm p-8 bg-white shadow-2xl"><div className="flex justify-center mb-6"><UltramapLogo /></div><h2 className="text-center font-bold text-slate-800 mb-6 tracking-tight uppercase tracking-widest font-sans uppercase">Log Masuk HR System</h2><form onSubmit={handleLogin} className="space-y-4 font-sans"><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest font-sans uppercase">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest font-sans uppercase">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold transition-all hover:bg-blue-700 shadow-md uppercase tracking-widest text-sm uppercase">Masuk</button></form><div className="mt-8 text-center"><button onClick={handleSeedData} className="text-xs text-slate-400 underline uppercase tracking-widest font-sans uppercase">Setup Database</button></div></Card></div>;
+  // --- VIEW: LOG IN ---
+  if (!authUser) return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
+      <Card className="w-full max-w-sm p-8 bg-white shadow-2xl">
+        <div className="flex justify-center mb-6"><UltramapLogo /></div>
+        <h2 className="text-center font-bold text-slate-800 mb-6 tracking-tight uppercase tracking-widest font-sans">Log Masuk HR System</h2>
+        
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest font-sans">Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest font-sans">Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required />
+          </div>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded font-bold transition-all hover:bg-blue-700 shadow-md uppercase tracking-widest text-sm flex items-center justify-center gap-2 font-sans"
+          >
+            {loading ? <><Loader2 size={16} className="animate-spin" /> Sedang Masuk...</> : "Masuk"}
+          </button>
+        </form>
 
+        <div className="mt-8 text-center">
+          <button onClick={handleSeedData} className="text-xs text-slate-400 underline uppercase tracking-widest font-sans">Setup Database</button>
+        </div>
+      </Card>
+    </div>
+  );
+
+  // --- VIEW: PROFILE MISSING ---
+  if (!currentUser && authUser) return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
+          <Card className="w-full max-w-sm p-8 bg-white shadow-2xl text-center font-sans">
+              <div className="flex justify-center mb-4 text-orange-500"><AlertTriangle size={48} /></div>
+              <h2 className="font-bold text-slate-800 mb-2 uppercase tracking-widest">Profil Tidak Dijumpai</h2>
+              <p className="text-sm text-slate-500 mb-6">Akaun anda <b>{authUser.email}</b> wujud, tetapi profil maklumat (gaji/jawatan) belum didaftarkan di dalam Firestore database.</p>
+              
+              <div className="space-y-3">
+                  <button onClick={handleLinkProfile} disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase text-xs tracking-widest">
+                      {loading ? <Loader2 size={14} className="animate-spin" /> : "Hubungkan Profil"}
+                  </button>
+                  <button onClick={handleLogout} className="w-full bg-slate-100 text-slate-600 py-2 rounded font-bold hover:bg-slate-200 transition-all uppercase text-xs tracking-widest">
+                      Cuba Akaun Lain
+                  </button>
+              </div>
+              <p className="mt-6 text-[10px] text-slate-400 italic">Sila hubungi Admin jika butang "Hubungkan Profil" tidak berfungsi.</p>
+          </Card>
+      </div>
+  );
+
+  // --- VIEW: DASHBOARD (MAIN) ---
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
         <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm print:hidden">
             <div className="flex items-center gap-3"><UltramapLogo /></div>
             <div className="flex items-center gap-3">
-                <span className="text-xs font-bold hidden md:block uppercase text-slate-500 font-sans tracking-widest uppercase tracking-widest">{currentUser.nickname}</span>
+                <span className="text-xs font-bold hidden md:block uppercase text-slate-500 font-sans tracking-widest">{currentUser.nickname}</span>
                 <button onClick={() => setShowPasswordModal(true)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><Settings size={16}/></button>
-                <button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold hover:bg-slate-300 transition-colors shadow-sm uppercase font-sans tracking-widest uppercase tracking-widest">Keluar</button>
+                <button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold hover:bg-slate-300 transition-colors shadow-sm uppercase tracking-widest font-sans">Keluar</button>
             </div>
         </nav>
         <main className="max-w-7xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
-                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 print:hidden hover:text-slate-800 transition-colors font-bold uppercase tracking-widest text-xs font-sans uppercase tracking-widest"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
+                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 print:hidden hover:text-slate-800 transition-colors font-bold uppercase tracking-widest text-xs font-sans"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
             ) : (
                 <div className="space-y-6">
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight font-sans uppercase tracking-widest border-b-2 border-blue-600 inline-block uppercase tracking-wider">Hi! {currentUser.nickname}!</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight border-b-2 border-blue-600 inline-block uppercase tracking-wider font-sans">Hi! {currentUser.nickname}!</h1>
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
-                            <div className="flex justify-between items-start font-sans uppercase"><p className="text-slate-400 text-xs mb-1 uppercase tracking-widest font-sans tracking-widest">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white transition-colors">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
-                            <h2 className="text-2xl lg:text-3xl font-bold mt-1 font-sans tracking-tight">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
-                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded text-[10px] font-bold flex items-center gap-2 w-fit mt-2 shadow-sm uppercase font-sans tracking-widest uppercase tracking-widest"><Download size={12}/> Slip Gaji</button>
+                        <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative font-sans">
+                            <div className="flex justify-between items-start"><p className="text-slate-400 text-xs mb-1 uppercase tracking-widest font-sans">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white transition-colors">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
+                            <h2 className="text-2xl lg:text-3xl font-bold mt-1">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
+                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded text-[10px] font-bold flex items-center gap-2 w-fit mt-2 shadow-sm uppercase tracking-widest font-sans"><Download size={12}/> Slip Gaji</button>
                         </div>
-                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center"><p className="text-slate-500 text-xs mb-1 uppercase tracking-widest font-sans tracking-widest uppercase tracking-widest uppercase">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800 font-sans tracking-tight uppercase tracking-wider">{getRemainingLeave(currentUser.id)} Hari</h2></div>
+                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center font-sans"><p className="text-slate-500 text-xs mb-1 uppercase tracking-widest font-sans">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800 tracking-wider font-sans">{getRemainingLeave(currentUser.id)} Hari</h2></div>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-sans">
                         <div className="space-y-6">
                             {(currentUser.role !== 'staff') ? (
                                 <>
-                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700 tracking-widest text-sm uppercase tracking-widest uppercase"><Settings size={20} className="text-slate-400"/> Tetapan Cutoff</h3><input type="number" value={settings.customSubmissionDate || ''} onChange={(e) => updateSettingsDB(e.target.value ? Number(e.target.value) : null)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none font-sans" /></Card>
-                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700 tracking-widest text-sm uppercase tracking-widest uppercase"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 font-sans uppercase"><tr><th className="p-2 text-[10px] uppercase tracking-widest">Nama</th><th className="p-2 text-[10px] uppercase tracking-widest">Basic</th><th className="p-2 text-[10px] uppercase tracking-widest text-center uppercase tracking-widest">Cuti</th><th className="p-2 text-[10px] uppercase tracking-widest uppercase tracking-widest">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={`u-row-${u.id}`} className="border-b font-sans hover:bg-slate-50 transition-colors font-sans uppercase tracking-widest"><td className="p-2 font-bold font-sans uppercase tracking-widest">{u.nickname}</td><td className="p-2 font-sans uppercase tracking-widest">{u.baseSalary.toFixed(2)}</td><td className="p-2 text-center font-sans uppercase tracking-widest">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] tracking-widest font-sans uppercase tracking-widest">Edit</button></td></tr>))}</tbody></table></Card>
+                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-700 tracking-widest text-sm uppercase"><Settings size={20} className="text-slate-400"/> Tetapan Cutoff</h3><input type="number" value={settings.customSubmissionDate || ''} onChange={(e) => updateSettingsDB(e.target.value ? Number(e.target.value) : null)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" /></Card>
+                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-700 tracking-widest text-sm uppercase"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 font-sans uppercase"><tr><th className="p-2 text-[10px] uppercase tracking-widest">Nama</th><th className="p-2 text-[10px] uppercase tracking-widest">Basic</th><th className="p-2 text-[10px] uppercase tracking-widest text-center">Cuti</th><th className="p-2 text-[10px] uppercase tracking-widest">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={`u-row-${u.id}`} className="border-b hover:bg-slate-50 transition-colors uppercase tracking-widest"><td className="p-2 font-bold">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] tracking-widest">Edit</button></td></tr>))}</tbody></table></Card>
                                 </>
                             ) : (
                                 <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(currentUser.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
                             )}
-                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-tight tracking-wider text-sm uppercase tracking-widest font-sans tracking-widest uppercase tracking-widest uppercase"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Dihantar!");}} className="space-y-3 font-sans uppercase tracking-widest"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-xs uppercase tracking-widest" required/><input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-xs uppercase tracking-widest" required/></div><input name="r" placeholder="Tujuan" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-sm uppercase tracking-widest" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold shadow transition-colors hover:bg-slate-900 uppercase text-xs tracking-widest font-sans uppercase tracking-widest uppercase tracking-widest">Hantar Permohonan</button></form></Card>
+                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 tracking-wider text-sm uppercase"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Dihantar!");}} className="space-y-3"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none text-xs" required/><input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none text-xs" required/></div><input name="r" placeholder="Tujuan" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none text-sm" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold shadow transition-colors hover:bg-slate-900 uppercase text-xs tracking-widest">Hantar Permohonan</button></form></Card>
                         </div>
                         <div className="space-y-6">
                             {(currentUser.role !== 'staff') && (
                                 <div>
-                                    <h3 className="font-bold text-lg text-slate-700 mb-4 uppercase tracking-tighter font-sans uppercase tracking-wider text-sm tracking-widest uppercase tracking-widest uppercase tracking-widest font-sans">Panel Timesheet Staff</h3>
+                                    <h3 className="font-bold text-lg text-slate-700 mb-4 uppercase tracking-wider text-sm tracking-widest font-sans">Panel Timesheet Staff</h3>
                                     <div className="space-y-4">
-                                        {users.filter(u => u.role === 'staff').map(staff => (<Card key={`staff-card-${staff.id}`} className="p-4 shadow-sm hover:shadow-md transition-shadow font-sans uppercase tracking-widest"><div className="flex justify-between items-center mb-2"><span className="font-bold font-sans text-slate-700 tracking-tight uppercase tracking-wider">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (
-                                            <div className="mt-2 animate-in fade-in duration-300 font-sans uppercase tracking-widest">
+                                        {users.filter(u => u.role === 'staff').map(staff => (<Card key={`staff-card-${staff.id}`} className="p-4 shadow-sm hover:shadow-md transition-shadow font-sans"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700 tracking-tight uppercase tracking-wider font-sans">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (
+                                            <div className="mt-2 animate-in fade-in duration-300 font-sans">
                                                 <TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} />
-                                                <div className="flex gap-2 mt-2 font-sans uppercase tracking-widest">
-                                                    <button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-red-500 font-bold py-2 bg-red-50 rounded uppercase transition-colors hover:bg-red-100 font-sans tracking-widest uppercase tracking-widest">Tutup</button>
-                                                    <button onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')} className="flex-1 text-xs text-white font-bold py-2 bg-emerald-600 rounded uppercase shadow transition-all hover:bg-emerald-700 font-sans tracking-widest uppercase tracking-widest shadow-emerald-200">Luluskan</button>
+                                                <div className="flex gap-2 mt-2 font-sans">
+                                                    <button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-red-500 font-bold py-2 bg-red-50 rounded uppercase transition-colors hover:bg-red-100 font-sans">Tutup</button>
+                                                    <button onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')} className="flex-1 text-xs text-white font-bold py-2 bg-emerald-600 rounded uppercase shadow transition-all hover:bg-emerald-700 shadow-emerald-200 font-sans">Luluskan</button>
                                                 </div>
                                             </div>
-                                        ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold font-sans hover:bg-slate-200 transition-colors uppercase font-sans tracking-widest text-[10px] uppercase tracking-widest">Semak & Luluskan</button>)}</Card>))}
+                                        ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold hover:bg-slate-200 transition-colors uppercase tracking-widest font-sans">Semak & Luluskan</button>)}</Card>))}
                                     </div>
                                 </div>
                             )}
-                            <Card className="p-6 shadow-sm uppercase tracking-widest">
-                                <h3 className="font-bold mb-4 font-sans text-lg border-b pb-2 tracking-tight uppercase text-slate-700 uppercase tracking-wider text-sm tracking-widest font-sans uppercase tracking-widest">Pengesahan Cuti</h3>
-                                {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={`leave-p-${leave.id}`} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 shadow-inner transition-all hover:border-emerald-200 font-sans uppercase tracking-widest"><div className="text-xs font-sans uppercase tracking-widest"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><div className="flex gap-1 font-sans uppercase tracking-widest"><button onClick={()=>approveLeaveDB(leave.id,'Approved')} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow transition-all hover:bg-emerald-700 uppercase font-sans tracking-widest uppercase tracking-widest shadow-emerald-100">Lulus</button></div></div>))}
-                                {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic font-sans uppercase tracking-widest uppercase tracking-widest">Tiada permohonan cuti.</p>}
+                            <Card className="p-6 shadow-sm font-sans">
+                                <h3 className="font-bold mb-4 text-lg border-b pb-2 tracking-tight text-slate-700 uppercase tracking-wider text-sm tracking-widest font-sans">Pengesahan Cuti</h3>
+                                {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={`leave-p-${leave.id}`} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 shadow-inner transition-all hover:border-emerald-200 font-sans"><div className="text-xs font-sans"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><div className="flex gap-1 font-sans"><button onClick={()=>approveLeaveDB(leave.id,'Approved')} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow transition-all hover:bg-emerald-700 uppercase tracking-widest shadow-emerald-100 font-sans">Lulus</button></div></div>))}
+                                {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic font-sans">Tiada permohonan cuti.</p>}
                                 {currentUser.role !== 'staff' && <LeaveHistoryViewer users={users} leaves={leaves} />}
                             </Card>
                         </div>
@@ -577,11 +682,41 @@ export default function App() {
                     <div className="print:hidden"><PayslipFolderSystem currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} timesheetStatus={getTimesheetStatusFromDB(currentUser.id)} currentDate={currentDate} /></div>
                 </div>
             )}
+            
             {editingUser && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden animate-in zoom-in duration-200 font-sans uppercase tracking-widest uppercase tracking-widest"><Card className="w-full max-w-md p-6 shadow-2xl uppercase tracking-widest"><h3 className="font-bold mb-4 font-sans text-xl tracking-tight text-slate-800 border-b pb-2 uppercase tracking-widest uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={(e)=>{e.preventDefault(); updateUserDB(editingUser);}} className="space-y-4 font-sans uppercase tracking-widest uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide uppercase tracking-widest uppercase tracking-widest font-sans">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans uppercase tracking-widest" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide uppercase tracking-widest uppercase tracking-widest font-sans">Elaun Tetap (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans uppercase tracking-widest" value={editingUser.fixedAllowance} onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide font-sans uppercase tracking-widest uppercase tracking-widest font-sans">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans uppercase tracking-widest" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div><div className="bg-slate-50 p-3 rounded border font-sans uppercase tracking-widest uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-400 uppercase tracking-tighter uppercase tracking-widest uppercase tracking-widest font-sans tracking-widest">KWSP Manual (RM)</label><input type="number" className="w-full border p-1 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans uppercase tracking-widest uppercase tracking-widest shadow-sm" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div></div><div className="flex gap-2 pt-4 font-sans uppercase tracking-widest"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold hover:bg-slate-200 transition-colors uppercase text-xs uppercase tracking-widest font-sans uppercase tracking-widest uppercase tracking-widest">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow-md hover:bg-blue-700 transition-all uppercase text-xs uppercase tracking-widest font-sans uppercase tracking-widest shadow-blue-200">Simpan</button></div></form></Card></div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden animate-in zoom-in duration-200 font-sans">
+                  <Card className="w-full max-w-md p-6 shadow-2xl font-sans">
+                    <h3 className="font-bold mb-4 text-xl tracking-tight text-slate-800 border-b pb-2 uppercase tracking-widest font-sans">Edit Profil: {editingUser.nickname}</h3>
+                    <form onSubmit={(e)=>{e.preventDefault(); updateUserDB(editingUser);}} className="space-y-4 font-sans">
+                      <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
+                      <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Elaun Tetap (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.fixedAllowance} onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} /></div>
+                      <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
+                      <div className="bg-slate-50 p-3 rounded border font-sans">
+                        <div><label className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">KWSP Manual (RM)</label><input type="number" className="w-full border p-1 rounded focus:ring-2 focus:ring-blue-400 outline-none shadow-sm font-sans" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
+                      </div>
+                      <div className="flex gap-2 pt-4 font-sans">
+                        <button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold hover:bg-slate-200 transition-colors uppercase text-xs font-sans">Batal</button>
+                        <button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow-md hover:bg-blue-700 transition-all uppercase text-xs shadow-blue-200 font-sans">Simpan</button>
+                      </div>
+                    </form>
+                  </Card>
+                </div>
             )}
+
             {showPasswordModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in zoom-in duration-200 font-sans uppercase tracking-widest"><Card className="w-full max-w-sm p-6 shadow-2xl uppercase tracking-widest uppercase tracking-widest"><h3 className="font-bold text-lg mb-4 font-sans tracking-tight uppercase border-b pb-2 uppercase tracking-widest uppercase tracking-widest uppercase tracking-widest font-sans">Tukar Password</h3><form onSubmit={handleChangePassword} className="space-y-4 font-sans uppercase tracking-widest uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-500 uppercase uppercase tracking-widest uppercase tracking-widest font-sans tracking-widest uppercase">Password Baru</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all font-sans uppercase tracking-widest shadow-sm" onChange={e => setNewPasswordData({...newPasswordData, new: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase uppercase tracking-widest uppercase tracking-widest font-sans tracking-widest uppercase">Sahkan Password</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all font-sans uppercase tracking-widest shadow-sm" onChange={e => setNewPasswordData({...newPasswordData, confirm: e.target.value})} /></div><div className="flex gap-2 pt-2 font-sans uppercase tracking-widest"><button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase transition-colors hover:bg-slate-200 uppercase tracking-widest text-xs font-sans uppercase tracking-widest">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow hover:bg-blue-700 transition-colors uppercase uppercase tracking-widest text-xs font-sans uppercase tracking-widest shadow-blue-200">Tukar</button></div></form></Card></div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in zoom-in duration-200 font-sans">
+                  <Card className="w-full max-w-sm p-6 shadow-2xl font-sans">
+                    <h3 className="font-bold text-lg mb-4 tracking-tight uppercase border-b pb-2 font-sans">Tukar Password</h3>
+                    <form onSubmit={handleChangePassword} className="space-y-4 font-sans">
+                      <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Password Baru</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all shadow-sm font-sans" onChange={e => setNewPasswordData({...newPasswordData, new: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Sahkan Password</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all shadow-sm font-sans" onChange={e => setNewPasswordData({...newPasswordData, confirm: e.target.value})} /></div>
+                      <div className="flex gap-2 pt-2 font-sans">
+                        <button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase transition-colors hover:bg-slate-200 text-xs font-sans">Batal</button>
+                        <button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow hover:bg-blue-700 transition-colors uppercase text-xs shadow-blue-200 font-sans">Tukar</button>
+                      </div>
+                    </form>
+                  </Card>
+                </div>
             )}
         </main>
     </div>
