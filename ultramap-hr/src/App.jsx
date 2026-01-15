@@ -528,7 +528,7 @@ export default function App() {
       await setDoc(doc(db, "settings", "global"), { customSubmissionDate: 20 });
       let addedCount = 0;
       for (const u of SEED_USERS) { 
-          const q = query(collection(db, "users"), where("email", "==", u.email));
+          const q = query(collection(db, "users"), where("email", "==", u.email.toLowerCase()));
           const s = await getDocs(q);
           if (s.empty) {
               await addDoc(collection(db, "users"), u); 
@@ -544,16 +544,34 @@ export default function App() {
 
   const handleLinkProfile = async () => {
       setLoading(true);
-      const seedMatch = SEED_USERS.find(s => s.email === authUser.email);
-      if (seedMatch) {
-          try {
+      const userEmail = authUser.email.toLowerCase();
+      // Cari jika emel log masuk ada dalam senarai SEED_USERS
+      const seedMatch = SEED_USERS.find(s => s.email.toLowerCase() === userEmail);
+      
+      try {
+          if (seedMatch) {
               await addDoc(collection(db, "users"), seedMatch);
               alert("Profil berjaya dihubungkan! Sila tunggu sebentar.");
-          } catch (err) {
-              alert("Ralat hubung: " + err.message);
+          } else {
+              // Jika emel log masuk tiada dalam SEED_USERS, bina profil "Pekerja Baru"
+              const defaultProfile = {
+                  email: userEmail,
+                  name: authUser.displayName || 'Pekerja Baru',
+                  nickname: userEmail.split('@')[0],
+                  role: 'staff',
+                  position: 'STAFF',
+                  ic: '000000-00-0000',
+                  baseSalary: 1500,
+                  fixedAllowance: 0,
+                  customEpf: null,
+                  customSocso: null,
+                  leaveBalance: 12
+              };
+              await addDoc(collection(db, "users"), defaultProfile);
+              alert("Profil baru telah dicipta secara automatik. Sila minta Admin kemaskini maklumat jawatan anda.");
           }
-      } else {
-          alert("Emel anda tiada dalam senarai SEED_USERS. Sila hubungi Super Admin untuk pendaftaran manual.");
+      } catch (err) {
+          alert("Ralat hubung: " + err.message);
       }
       setLoading(false);
   };
@@ -612,7 +630,7 @@ export default function App() {
                       Cuba Akaun Lain
                   </button>
               </div>
-              <p className="mt-6 text-[10px] text-slate-400 italic">Sila hubungi Admin jika butang "Hubungkan Profil" tidak berfungsi.</p>
+              <p className="mt-6 text-[10px] text-slate-400 italic">Klik "Hubungkan Profil" untuk membina entri baru secara automatik.</p>
           </Card>
       </div>
   );
@@ -685,7 +703,7 @@ export default function App() {
             
             {editingUser && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden animate-in zoom-in duration-200 font-sans">
-                  <Card className="w-full max-w-md p-6 shadow-2xl font-sans">
+                  <Card className="w-full max-md p-6 shadow-2xl font-sans">
                     <h3 className="font-bold mb-4 text-xl tracking-tight text-slate-800 border-b pb-2 uppercase tracking-widest font-sans">Edit Profil: {editingUser.nickname}</h3>
                     <form onSubmit={(e)=>{e.preventDefault(); updateUserDB(editingUser);}} className="space-y-4 font-sans">
                       <div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
