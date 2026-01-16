@@ -433,8 +433,14 @@ export default function App() {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         const q = query(collection(db, "users"), where("email", "==", user.email));
-        onSnapshot(q, (snapshot) => { if (!snapshot.empty) setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); });
-      } else setCurrentUser(null);
+        onSnapshot(q, (snapshot) => { 
+  if (!snapshot.empty) {
+    setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); 
+  } else {
+    // Tambah ini untuk tahu jika data Firestore tiada
+    alert("Profil pengguna tidak dijumpai dalam database Firestore!");
+    signOut(auth); // Log keluar semula supaya tidak tergantung
+  }
     });
     onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
     onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
