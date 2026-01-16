@@ -26,10 +26,11 @@ try {
 }
 
 // --- DATA AWAL (SEED) ---
+// Emel telah dikemaskini mengikut emel sebenar yang anda gunakan
 const SEED_USERS = [
   { email: 'hafiz@ultramap.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
   { email: 'syazwan@ultramap.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
-  { email: 'noorizwan@ultramap.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
+  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
   { email: 'taufiq@ultramap.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
 ];
 
@@ -567,30 +568,35 @@ export default function App() {
   const handleLinkProfile = async () => {
       setLoading(true);
       const userEmail = authUser.email.toLowerCase();
+      console.log("Mencuba menghubungkan emel:", userEmail);
+      
+      // Cari profil dalam SEED_USERS dahulu
       const seedMatch = SEED_USERS.find(s => s.email.toLowerCase() === userEmail);
       
       try {
           if (seedMatch) {
               await addDoc(collection(db, "users"), { ...seedMatch, email: userEmail });
-              alert("Profil berjaya dihubungkan! Sila tunggu sebentar.");
+              alert("Profil berjaya dihubungkan! Dashboard akan muncul dalam beberapa saat.");
           } else {
+              // Bina profil automatik jika emel tiada dalam SEED_USERS
               const defaultProfile = {
                   email: userEmail,
                   name: authUser.displayName || 'Pekerja Baru',
                   nickname: userEmail.split('@')[0],
                   role: 'staff',
-                  position: 'STAFF',
+                  position: 'OPERATION',
                   ic: '000000-00-0000',
                   baseSalary: 1500,
                   fixedAllowance: 0,
                   customEpf: null,
                   customSocso: null,
-                  leaveBalance: 12
+                  leaveBalance: 14
               };
               await addDoc(collection(db, "users"), defaultProfile);
-              alert("Profil baru telah dijana untuk emel anda.");
+              alert("Profil baru telah dijana. Sila minta Admin kemaskini maklumat gaji anda.");
           }
       } catch (err) {
+          console.error("Link Profile Error:", err);
           alert("Ralat hubung: " + err.message);
       }
       setLoading(false);
@@ -612,7 +618,7 @@ export default function App() {
         <form onSubmit={handleLogin} className="space-y-4 font-sans">
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest font-sans">Emel</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" required />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-sans" placeholder="contoh@gmail.com" required />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest font-sans">Kata Laluan</label>
@@ -643,14 +649,14 @@ export default function App() {
               <p className="text-sm text-slate-500 mb-6 font-sans">Akaun anda <b>{authUser.email}</b> wujud di Authentication, tetapi profil maklumat belum didaftarkan di Firestore database.</p>
               
               <div className="space-y-3 font-sans">
-                  <button onClick={handleLinkProfile} disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase text-xs tracking-widest font-sans">
-                      {loading ? <Loader2 size={14} className="animate-spin" /> : "Hubungkan Profil"}
+                  <button onClick={handleLinkProfile} disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase text-xs tracking-widest font-sans shadow-lg shadow-blue-200">
+                      {loading ? <Loader2 size={14} className="animate-spin" /> : "Hubungkan Profil Sekarang"}
                   </button>
                   <button onClick={handleLogout} className="w-full bg-slate-100 text-slate-600 py-2 rounded font-bold hover:bg-slate-200 transition-all uppercase text-xs tracking-widest font-sans">
                       Cuba Akaun Lain
                   </button>
               </div>
-              <p className="mt-6 text-[10px] text-slate-400 italic font-sans">Sistem sekarang akan menjana profil asas jika anda tekan butang di atas.</p>
+              <p className="mt-6 text-[10px] text-slate-400 italic font-sans leading-tight">Pastikan emel anda betul. Tekan butang di atas untuk memulakan penyambungan data.</p>
           </Card>
       </div>
   );
