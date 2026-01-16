@@ -425,34 +425,46 @@ export default function App() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPasswordData, setNewPasswordData] = useState({ new: '', confirm: '' });
 
+  // 1. Monitor Auth State ONLY
   useEffect(() => {
     if (!auth) return;
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setAuthUser(user);
-      if (user) {
-        // Gunakan toLowerCase() untuk carian yang lebih tepat
-        const q = query(collection(db, "users"), where("email", "==", user.email.toLowerCase()));
-        onSnapshot(q, (snapshot) => { 
-          if (!snapshot.empty) {
-            setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); 
-            setLoading(false);
-          } else {
-            setCurrentUser(null);
-            setLoading(false);
-          }
-        });
-      } else {
+      if (!user) {
         setCurrentUser(null);
         setLoading(false);
       }
     });
-    onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
-    onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
-    onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
-    onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
-    onSnapshot(doc(db, "settings", "global"), (s) => { if(s.exists()) setSettings(s.data()); });
     return () => unsubscribeAuth();
   }, []);
+
+  // 2. Load Firestore Data ONLY after Auth is confirmed
+  useEffect(() => {
+    if (!authUser || !db) return;
+
+    // A. Current User Profile
+    const qUser = query(collection(db, "users"), where("email", "==", authUser.email.toLowerCase()));
+    const unsubUser = onSnapshot(qUser, (snapshot) => { 
+      if (!snapshot.empty) {
+        setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); 
+        setLoading(false);
+      } else {
+        setCurrentUser(null);
+        setLoading(false);
+      }
+    }, (error) => console.error("Firestore User Error:", error));
+
+    // B. Global Collections
+    const unsubUsers = onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))), (e) => console.error("Users error:", e));
+    const unsubAtt = onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))), (e) => console.error("Attendance error:", e));
+    const unsubLeaves = onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))), (e) => console.error("Leaves error:", e));
+    const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))), (e) => console.error("Timesheets error:", e));
+    const unsubSettings = onSnapshot(doc(db, "settings", "global"), (s) => { if(s.exists()) setSettings(s.data()); }, (e) => console.error("Settings error:", e));
+
+    return () => {
+      unsubUser(); unsubUsers(); unsubAtt(); unsubLeaves(); unsubTS(); unsubSettings();
+    };
+  }, [authUser]);
 
   const handleLogin = async (e) => { 
     e.preventDefault(); 
@@ -461,7 +473,7 @@ export default function App() {
       await signInWithEmailAndPassword(auth, email.toLowerCase(), password); 
     } catch (err) { 
       setLoading(false);
-      alert("Gagal Log Masuk! Sila periksa email dan kata laluan."); 
+      alert("Gagal Log Masuk! Sila periksa emel dan kata laluan."); 
     } 
   };
 
@@ -472,17 +484,30 @@ export default function App() {
   };
 
   const toggleAttendanceDB = async (dateStr, userId, type, shouldDelete, remark = "") => {
+      if (!authUser) return;
       const existing = attendance.find(a => a.date === dateStr && a.userId === userId);
       if (shouldDelete && existing) { await deleteDoc(doc(db, "attendance", existing.id)); } 
       else if (existing) { await updateDoc(doc(db, "attendance", existing.id), { remark }); } 
       else { await addDoc(collection(db, "attendance"), { date: dateStr, userId, type, remark }); }
   };
   
-  const approveLeaveDB = async (id, status) => { await updateDoc(doc(db, "leaves", id), { status, approvedBy: currentUser.nickname }); };
-  const updateSettingsDB = async (val) => { await updateDoc(doc(db, "settings", "global"), { customSubmissionDate: val }); };
-  const updateUserDB = async (u) => { await updateDoc(doc(db, "users", u.id), { baseSalary: u.baseSalary, fixedAllowance: u.fixedAllowance, customEpf: u.customEpf, customSocso: u.customSocso, leaveBalance: u.leaveBalance }); setEditingUser(null); alert("Berjaya!"); };
+  const approveLeaveDB = async (id, status) => {
+      if (!authUser) return;
+      await updateDoc(doc(db, "leaves", id), { status, approvedBy: currentUser.nickname }); 
+  };
+  const updateSettingsDB = async (val) => {
+      if (!authUser) return;
+      await updateDoc(doc(db, "settings", "global"), { customSubmissionDate: val }); 
+  };
+  const updateUserDB = async (u) => {
+      if (!authUser) return;
+      await updateDoc(doc(db, "users", u.id), { baseSalary: u.baseSalary, fixedAllowance: u.fixedAllowance, customEpf: u.customEpf, customSocso: u.customSocso, leaveBalance: u.leaveBalance }); 
+      setEditingUser(null); 
+      alert("Berjaya!"); 
+  };
   
   const updateTimesheetStatusDB = async (userId, status) => {
+      if (!authUser) return;
       const today = new Date();
       const targetMonthDate = today.getDate() <= 5 ? new Date(today.getFullYear(), today.getMonth() - 1, 1) : today;
       const monthStr = targetMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
@@ -542,7 +567,6 @@ export default function App() {
   const handleLinkProfile = async () => {
       setLoading(true);
       const userEmail = authUser.email.toLowerCase();
-      // Cari profil dalam SEED_USERS dahulu
       const seedMatch = SEED_USERS.find(s => s.email.toLowerCase() === userEmail);
       
       try {
@@ -550,7 +574,6 @@ export default function App() {
               await addDoc(collection(db, "users"), { ...seedMatch, email: userEmail });
               alert("Profil berjaya dihubungkan! Sila tunggu sebentar.");
           } else {
-              // Bina profil automatik jika emel tiada dalam SEED_USERS
               const defaultProfile = {
                   email: userEmail,
                   name: authUser.displayName || 'Pekerja Baru',
@@ -575,7 +598,7 @@ export default function App() {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if(newPasswordData.new !== newPasswordData.confirm) return alert("Password tidak sama!");
+    if(newPasswordData.new !== newPasswordData.confirm) return alert("Kata laluan tidak sama!");
     try { await updatePassword(auth.currentUser, newPasswordData.new); alert("Berjaya! Sila log masuk semula."); setShowPasswordModal(false); handleLogout(); } catch(err) { alert("Gagal: " + err.message); }
   };
 
@@ -645,7 +668,7 @@ export default function App() {
         </nav>
         <main className="max-w-7xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
-                <div className="font-sans font-sans font-sans font-sans font-sans font-sans font-sans font-sans font-sans">
+                <div className="font-sans">
                     <button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 print:hidden hover:text-slate-800 transition-colors font-bold uppercase tracking-widest text-xs font-sans"><ChevronLeft size={16} /> Kembali</button>
                     <PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} />
                 </div>
@@ -665,7 +688,7 @@ export default function App() {
                             {(currentUser.role !== 'staff') ? (
                                 <>
                                     <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm font-sans"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-700 tracking-widest text-sm uppercase font-sans"><Settings size={20} className="text-slate-400"/> Tetapan Cutoff</h3><input type="number" value={settings.customSubmissionDate || ''} onChange={(e) => updateSettingsDB(e.target.value ? Number(e.target.value) : null)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none font-sans" /></Card>
-                                    <Card className="p-6 shadow-sm font-sans"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-700 tracking-widest text-sm uppercase font-sans"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left font-sans"><thead className="bg-slate-50 text-slate-500 font-sans uppercase"><tr><th className="p-2 text-[10px] uppercase tracking-widest font-sans">Nama</th><th className="p-2 text-[10px] uppercase tracking-widest font-sans">Basic</th><th className="p-2 text-[10px] uppercase tracking-widest text-center font-sans">Cuti</th><th className="p-2 text-[10px] uppercase tracking-widest font-sans">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={`u-row-${u.id}`} className="border-b hover:bg-slate-50 transition-colors uppercase tracking-widest font-sans"><td className="p-2 font-bold font-sans">{u.nickname}</td><td className="p-2 font-sans">{u.baseSalary?.toFixed(2)}</td><td className="p-2 text-center font-sans">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] tracking-widest font-sans">Edit</button></td></tr>))}</tbody></table></Card>
+                                    <Card className="p-6 shadow-sm font-sans"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-700 tracking-widest text-sm uppercase font-sans"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left font-sans"><thead className="bg-slate-50 text-slate-500 font-sans uppercase"><tr><th className="p-2 text-[10px] uppercase tracking-widest font-sans">Nama</th><th className="p-2 text-[10px] uppercase tracking-widest font-sans">Asas</th><th className="p-2 text-[10px] uppercase tracking-widest text-center font-sans">Cuti</th><th className="p-2 text-[10px] uppercase tracking-widest font-sans">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={`u-row-${u.id}`} className="border-b hover:bg-slate-50 transition-colors uppercase tracking-widest font-sans"><td className="p-2 font-bold font-sans">{u.nickname}</td><td className="p-2 font-sans">{u.baseSalary?.toFixed(2)}</td><td className="p-2 text-center font-sans">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] tracking-widest font-sans">Edit</button></td></tr>))}</tbody></table></Card>
                                 </>
                             ) : (
                                 <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(currentUser.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
