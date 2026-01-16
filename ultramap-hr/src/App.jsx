@@ -26,6 +26,7 @@ try {
 }
 
 // --- DATA AWAL (SEED) ---
+// Email dikemaskini mengikut rekod Authentication anda
 const SEED_USERS = [
   { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
   { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
@@ -98,8 +99,12 @@ const calculateLeaveDuration = (startDate, endDate) => {
   let current = new Date(startDate);
   const end = new Date(endDate);
   while (current <= end) {
+    const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
     const isSunday = current.getDay() === 0;
-    if (!isSunday) count++;
+    const isHoliday = JOHOR_HOLIDAYS.some(h => h.date === dateStr);
+    
+    // Hanya kira jika bukan hari Ahad DAN bukan cuti umum Johor
+    if (!isSunday && !isHoliday) count++;
     current.setDate(current.getDate() + 1);
   }
   return count;
@@ -176,7 +181,7 @@ const PayslipDesign = ({ data, user }) => {
   );
 };
 
-// --- TIMESHEET WIDGET (HISTORY SWIPE & REMARK) ---
+// --- TIMESHEET WIDGET ---
 const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, attendance, setAttendance, tsStatus, updateTimesheetStatus, isAdminView }) => {
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false);
@@ -196,7 +201,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
     const isCurrentMonthView = swipeIndex === 0;
     const entry = attendance.find(a => a.date === dateStr && a.userId === targetUserId);
 
-    // ADMIN VIEW ATAU HISTORY: Lihat sahaja
     if (isAdminView || !isCurrentMonthView) {
         if (entry) {
             setSelectedDayInfo({ day, dateStr, existingRemark: entry.remark });
@@ -208,7 +212,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
         return; 
     }
 
-    // Locking Logic for Current Month
     let isLocked = false;
     if (isPastCutoff && day <= customSubmissionDate) isLocked = true;
     if (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved') isLocked = true;
@@ -278,7 +281,9 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
                 const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const entry = attendance.find(a => a.date === dateStr && a.userId === targetUserId && a.type === 'site');
                 const isSite = !!entry;
-                const isHoliday = JOHOR_HOLIDAYS.some(h => h.date === dateStr);
+                
+                const holidayInfo = JOHOR_HOLIDAYS.find(h => h.date === dateStr);
+                const isHoliday = !!holidayInfo;
                 const isSunday = new Date(displayYear, displayMonth, day).getDay() === 0;
                 
                 let isVisualLock = (swipeIndex === 0 && isPastCutoff && day <= customSubmissionDate) || (!isAdminView && (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved'));
@@ -286,7 +291,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
                 
                 let btnClass = isHoliday ? "bg-orange-100 text-orange-600 border-orange-200 cursor-not-allowed font-bold" : isSite ? (isVisualLock ? "bg-slate-400 text-white border-slate-500" : "bg-emerald-500 text-white shadow-md border-emerald-600") : isSunday ? "bg-slate-200 text-slate-400 border-slate-300" : (isVisualLock || (isHistoryView && !isAdminView)) ? "opacity-50 cursor-not-allowed bg-slate-50 text-slate-300" : "bg-white text-slate-500 border-slate-100 hover:border-blue-300";
                 
-                return <button key={`day-cell-${displayYear}-${displayMonth}-${day}`} onClick={() => handleToggle(day)} disabled={isHoliday || (isVisualLock && !isSite && !isAdminView) || (isHistoryView && !isSite && !isAdminView)} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative transition-all ${btnClass}`} title={entry?.remark || ""}>
+                return <button key={`day-cell-${displayYear}-${displayMonth}-${day}`} onClick={() => handleToggle(day)} disabled={isHoliday || (isVisualLock && !isSite && !isAdminView) || (isHistoryView && !isSite && !isAdminView)} className={`aspect-square rounded flex flex-col items-center justify-center border text-xs relative transition-all ${btnClass}`} title={isHoliday ? `CUTI: ${holidayInfo.name}` : (entry?.remark || "")}>
                     <span className="font-bold">{day}</span>
                     {isSite && !isVisualLock && !isHoliday && !isHistoryView && <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>}
                     {(isVisualLock || isHistoryView) && isSite && <span className="absolute top-0.5 right-0.5"><Lock size={8} /></span>}
@@ -296,7 +301,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
         </div>
       </div>
       <div className="mt-auto flex justify-between items-center border-t pt-4">
-        <div><p className="text-xs text-slate-500 uppercase font-bold font-sans tracking-widest uppercase tracking-tighter">Jumlah Hari Kerja</p><p className="text-xl font-bold text-emerald-600 font-sans tracking-tight uppercase">{displayCount} Hari</p></div>
+        <div><p className="text-xs text-slate-500 uppercase font-bold font-sans tracking-widest">Jumlah Hari Kerja</p><p className="text-xl font-bold text-emerald-600 font-sans tracking-tight">{displayCount} Hari</p></div>
         {showSubmitBtn && swipeIndex === 0 && (
             <button 
                 disabled={!isSubmissionOpen}
@@ -355,7 +360,7 @@ const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, 
     const availableMonths = getAvailableMonths(selectedYear);
     return (
         <div className="mt-8 pt-8 border-t no-print">
-            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-tight tracking-wider text-sm uppercase tracking-widest"><FileText size={20}/> Arkib Slip Gaji</h3>
+            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-widest text-sm"><FileText size={20}/> Arkib Slip Gaji</h3>
             <div className="flex gap-4 mb-4">
                 {[2025, 2026].map(year => (
                     <button key={`year-btn-${year}`} onClick={() => setSelectedYear(year)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 transition-all font-sans ${selectedYear === year ? 'border-blue-600 text-blue-600 bg-blue-50 font-bold shadow-sm' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
@@ -389,7 +394,7 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     return (
         <Card className="mt-4 p-4 bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest uppercase"><History size={14}/> Sejarah Cuti Semua Staff</h4>
+            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest"><History size={14}/> Sejarah Cuti Semua Staff</h4>
             <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
                 {users.map(u => (
                     <button key={`user-btn-${u.id}`} onClick={() => setSelectedUser(u.id === selectedUser ? null : u.id)} className={`px-3 py-1 rounded text-[10px] font-bold whitespace-nowrap transition-all uppercase ${selectedUser === u.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white border text-slate-600 hover:border-blue-400'}`}>{u.nickname}</button>
@@ -433,13 +438,27 @@ export default function App() {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         const q = query(collection(db, "users"), where("email", "==", user.email));
-        onSnapshot(q, (snapshot) => { if (!snapshot.empty) setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); });
-      } else setCurrentUser(null);
+        onSnapshot(q, (snapshot) => { 
+            if (!snapshot.empty) {
+                setCurrentUser({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id }); 
+            } else {
+                alert("Profil tidak dijumpai dalam database!");
+                signOut(auth);
+            }
+        });
+
+        // Listeners hanya aktif selepas login
+        const unsubUsers = onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
+        const unsubAtt = onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
+        const unsubLeaves = onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
+        const unsubTS = onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
+        
+        return () => { unsubUsers(); unsubAtt(); unsubLeaves(); unsubTS(); };
+      } else {
+        setCurrentUser(null);
+      }
     });
-    onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
-    onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
-    onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
-    onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
+
     onSnapshot(doc(db, "settings", "global"), (s) => { if(s.exists()) setSettings(s.data()); });
     return () => unsubscribeAuth();
   }, []);
@@ -518,58 +537,108 @@ export default function App() {
         <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm print:hidden">
             <div className="flex items-center gap-3"><UltramapLogo /></div>
             <div className="flex items-center gap-3">
-                <span className="text-xs font-bold hidden md:block uppercase text-slate-500 font-sans tracking-widest uppercase tracking-widest">{currentUser.nickname}</span>
+                <span className="text-xs font-bold hidden md:block uppercase text-slate-500 font-sans tracking-widest">{currentUser.nickname}</span>
                 <button onClick={() => setShowPasswordModal(true)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><Settings size={16}/></button>
-                <button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold hover:bg-slate-300 transition-colors shadow-sm uppercase font-sans tracking-widest uppercase tracking-widest">Keluar</button>
+                <button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold hover:bg-slate-300 transition-colors shadow-sm uppercase font-sans tracking-widest">Keluar</button>
             </div>
         </nav>
         <main className="max-w-7xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
-                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 print:hidden hover:text-slate-800 transition-colors font-bold uppercase tracking-widest text-xs font-sans uppercase tracking-widest"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
+                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 print:hidden hover:text-slate-800 transition-colors font-bold uppercase tracking-widest text-xs font-sans"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
             ) : (
                 <div className="space-y-6">
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight font-sans uppercase tracking-widest border-b-2 border-blue-600 inline-block uppercase tracking-wider">Hi! {currentUser.nickname}!</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight font-sans uppercase tracking-widest border-b-2 border-blue-600 inline-block uppercase">Hi! {currentUser.nickname}!</h1>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
                             <div className="flex justify-between items-start font-sans uppercase"><p className="text-slate-400 text-xs mb-1 uppercase tracking-widest font-sans tracking-widest">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white transition-colors">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
                             <h2 className="text-2xl lg:text-3xl font-bold mt-1 font-sans tracking-tight">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
-                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded text-[10px] font-bold flex items-center gap-2 w-fit mt-2 shadow-sm uppercase font-sans tracking-widest uppercase tracking-widest"><Download size={12}/> Slip Gaji</button>
+                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 hover:bg-white/30 text-white py-1 px-3 rounded text-[10px] font-bold flex items-center gap-2 w-fit mt-2 shadow-sm uppercase font-sans tracking-widest"><Download size={12}/> Slip Gaji</button>
                         </div>
-                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center"><p className="text-slate-500 text-xs mb-1 uppercase tracking-widest font-sans tracking-widest uppercase tracking-widest uppercase">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800 font-sans tracking-tight uppercase tracking-wider">{getRemainingLeave(currentUser.id)} Hari</h2></div>
+                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center"><p className="text-slate-500 text-xs mb-1 uppercase tracking-widest font-sans tracking-widest uppercase">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800 font-sans tracking-tight uppercase">{getRemainingLeave(currentUser.id)} Hari</h2></div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="space-y-6">
                             {(currentUser.role !== 'staff') ? (
                                 <>
-                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700 tracking-widest text-sm uppercase tracking-widest uppercase"><Settings size={20} className="text-slate-400"/> Tetapan Cutoff</h3><input type="number" value={settings.customSubmissionDate || ''} onChange={(e) => updateSettingsDB(e.target.value ? Number(e.target.value) : null)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none font-sans" /></Card>
-                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700 tracking-widest text-sm uppercase tracking-widest uppercase"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 font-sans uppercase"><tr><th className="p-2 text-[10px] uppercase tracking-widest">Nama</th><th className="p-2 text-[10px] uppercase tracking-widest">Basic</th><th className="p-2 text-[10px] uppercase tracking-widest text-center uppercase tracking-widest">Cuti</th><th className="p-2 text-[10px] uppercase tracking-widest uppercase tracking-widest">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={`u-row-${u.id}`} className="border-b font-sans hover:bg-slate-50 transition-colors font-sans uppercase tracking-widest"><td className="p-2 font-bold font-sans uppercase tracking-widest">{u.nickname}</td><td className="p-2 font-sans uppercase tracking-widest">{u.baseSalary.toFixed(2)}</td><td className="p-2 text-center font-sans uppercase tracking-widest">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] tracking-widest font-sans uppercase tracking-widest">Edit</button></td></tr>))}</tbody></table></Card>
+                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700 tracking-widest text-sm uppercase"><Settings size={20} className="text-slate-400"/> Tetapan Cutoff</h3><input type="number" value={settings.customSubmissionDate || ''} onChange={(e) => updateSettingsDB(e.target.value ? Number(e.target.value) : null)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none font-sans" /></Card>
+                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 font-sans tracking-tight uppercase text-slate-700 tracking-widest text-sm uppercase"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 font-sans uppercase"><tr><th className="p-2 text-[10px] uppercase tracking-widest">Nama</th><th className="p-2 text-[10px] uppercase tracking-widest">Basic</th><th className="p-2 text-[10px] uppercase tracking-widest text-center">Cuti</th><th className="p-2 text-[10px] uppercase tracking-widest">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={`u-row-${u.id}`} className="border-b font-sans hover:bg-slate-50 transition-colors"><td className="p-2 font-bold font-sans uppercase tracking-widest">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] tracking-widest font-sans">Edit</button></td></tr>))}</tbody></table></Card>
                                 </>
                             ) : (
                                 <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(currentUser.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
                             )}
-                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-tight tracking-wider text-sm uppercase tracking-widest font-sans tracking-widest uppercase tracking-widest uppercase"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Dihantar!");}} className="space-y-3 font-sans uppercase tracking-widest"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-xs uppercase tracking-widest" required/><input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-xs uppercase tracking-widest" required/></div><input name="r" placeholder="Tujuan" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-sm uppercase tracking-widest" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold shadow transition-colors hover:bg-slate-900 uppercase text-xs tracking-widest font-sans uppercase tracking-widest uppercase tracking-widest">Hantar Permohonan</button></form></Card>
+                            
+                            <Card className="p-6 shadow-sm">
+                                <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 font-sans tracking-tight tracking-wider text-sm uppercase tracking-widest"><Send size={18} /> Permohonan Cuti</h3>
+                                <form onSubmit={(e)=>{
+                                    e.preventDefault(); 
+                                    const f=e.target; 
+                                    const days = calculateLeaveDuration(f.s.value, f.e.value);
+                                    if(days <= 0) return alert("Tarikh tidak sah atau jatuh pada hari cuti!");
+                                    addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:days}); 
+                                    f.reset(); 
+                                    alert("Permohonan dihantar!");
+                                }} className="space-y-3 font-sans uppercase tracking-widest">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-xs uppercase tracking-widest" required/>
+                                        <input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-xs uppercase tracking-widest" required/>
+                                    </div>
+                                    <input name="r" placeholder="Tujuan / Sebab Cuti" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none font-sans text-sm uppercase tracking-widest" required/>
+                                    <button className="bg-slate-800 text-white w-full py-3 rounded font-bold shadow transition-colors hover:bg-slate-900 uppercase text-xs tracking-widest font-sans">Hantar Permohonan</button>
+                                </form>
+                            </Card>
+
+                            {/* SEJARAH CUTI SAYA & WITHDRAW */}
+                            <Card className="p-6 shadow-sm">
+                                <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-sm uppercase tracking-widest"><History size={18} /> Sejarah Cuti Saya</h3>
+                                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                                    {leaves.filter(l => l.userId === currentUser.id).sort((a,b) => new Date(b.startDate) - new Date(a.startDate)).map(leave => {
+                                        const canWithdraw = new Date() <= new Date(leave.endDate);
+                                        return (
+                                            <div key={leave.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50 shadow-sm transition-all hover:border-blue-200">
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-700">{leave.startDate} - {leave.endDate}</p>
+                                                    <p className="text-[10px] text-slate-500 uppercase">{leave.reason} ({leave.days} Hari)</p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <Badge status={leave.status} />
+                                                    {canWithdraw && (
+                                                        <button onClick={async () => {
+                                                            if(confirm("Batal permohonan cuti ini?")) {
+                                                                await deleteDoc(doc(db, "leaves", leave.id));
+                                                                alert("Cuti dibatalkan.");
+                                                            }
+                                                        }} className="text-red-400 hover:text-red-600 transition-colors p-1"><Trash2 size={16} /></button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {leaves.filter(l => l.userId === currentUser.id).length === 0 && <p className="text-xs text-slate-400 italic text-center py-4">Tiada rekod cuti.</p>}
+                                </div>
+                            </Card>
                         </div>
+
                         <div className="space-y-6">
                             {(currentUser.role !== 'staff') && (
                                 <div>
-                                    <h3 className="font-bold text-lg text-slate-700 mb-4 uppercase tracking-tighter font-sans uppercase tracking-wider text-sm tracking-widest uppercase tracking-widest uppercase tracking-widest font-sans">Panel Timesheet Staff</h3>
+                                    <h3 className="font-bold text-lg text-slate-700 mb-4 uppercase tracking-tighter font-sans text-sm tracking-widest">Panel Timesheet Staff</h3>
                                     <div className="space-y-4">
                                         {users.filter(u => u.role === 'staff').map(staff => (<Card key={`staff-card-${staff.id}`} className="p-4 shadow-sm hover:shadow-md transition-shadow font-sans uppercase tracking-widest"><div className="flex justify-between items-center mb-2"><span className="font-bold font-sans text-slate-700 tracking-tight uppercase tracking-wider">{staff.name}</span><Badge status={getTimesheetStatusFromDB(staff.id).status} /></div>{showAdminTimesheet === staff.id ? (
                                             <div className="mt-2 animate-in fade-in duration-300 font-sans uppercase tracking-widest">
                                                 <TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={toggleAttendanceDB} tsStatus={getTimesheetStatusFromDB(staff.id)} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} />
                                                 <div className="flex gap-2 mt-2 font-sans uppercase tracking-widest">
-                                                    <button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-red-500 font-bold py-2 bg-red-50 rounded uppercase transition-colors hover:bg-red-100 font-sans tracking-widest uppercase tracking-widest">Tutup</button>
-                                                    <button onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')} className="flex-1 text-xs text-white font-bold py-2 bg-emerald-600 rounded uppercase shadow transition-all hover:bg-emerald-700 font-sans tracking-widest uppercase tracking-widest shadow-emerald-200">Luluskan</button>
+                                                    <button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-red-500 font-bold py-2 bg-red-50 rounded uppercase transition-colors hover:bg-red-100 font-sans tracking-widest">Tutup</button>
+                                                    <button onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')} className="flex-1 text-xs text-white font-bold py-2 bg-emerald-600 rounded uppercase shadow transition-all hover:bg-emerald-700 font-sans tracking-widest shadow-emerald-200">Luluskan</button>
                                                 </div>
                                             </div>
-                                        ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold font-sans hover:bg-slate-200 transition-colors uppercase font-sans tracking-widest text-[10px] uppercase tracking-widest">Semak & Luluskan</button>)}</Card>))}
+                                        ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold font-sans hover:bg-slate-200 transition-colors uppercase font-sans tracking-widest text-[10px]">Semak & Luluskan</button>)}</Card>))}
                                     </div>
                                 </div>
                             )}
                             <Card className="p-6 shadow-sm uppercase tracking-widest">
-                                <h3 className="font-bold mb-4 font-sans text-lg border-b pb-2 tracking-tight uppercase text-slate-700 uppercase tracking-wider text-sm tracking-widest font-sans uppercase tracking-widest">Pengesahan Cuti</h3>
-                                {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={`leave-p-${leave.id}`} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 shadow-inner transition-all hover:border-emerald-200 font-sans uppercase tracking-widest"><div className="text-xs font-sans uppercase tracking-widest"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><div className="flex gap-1 font-sans uppercase tracking-widest"><button onClick={()=>approveLeaveDB(leave.id,'Approved')} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow transition-all hover:bg-emerald-700 uppercase font-sans tracking-widest uppercase tracking-widest shadow-emerald-100">Lulus</button></div></div>))}
-                                {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic font-sans uppercase tracking-widest uppercase tracking-widest">Tiada permohonan cuti.</p>}
+                                <h3 className="font-bold mb-4 font-sans text-lg border-b pb-2 tracking-tight uppercase text-slate-700 uppercase tracking-wider text-sm tracking-widest">Pengesahan Cuti (Admin)</h3>
+                                {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={`leave-p-${leave.id}`} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 shadow-inner transition-all hover:border-emerald-200 font-sans uppercase tracking-widest"><div className="text-xs font-sans uppercase tracking-widest"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><div className="flex gap-1 font-sans uppercase tracking-widest"><button onClick={()=>approveLeaveDB(leave.id,'Approved')} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow transition-all hover:bg-emerald-700 uppercase font-sans tracking-widest shadow-emerald-100">Lulus</button></div></div>))}
+                                {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic font-sans uppercase tracking-widest">Tiada permohonan cuti.</p>}
                                 {currentUser.role !== 'staff' && <LeaveHistoryViewer users={users} leaves={leaves} />}
                             </Card>
                         </div>
@@ -578,10 +647,10 @@ export default function App() {
                 </div>
             )}
             {editingUser && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden animate-in zoom-in duration-200 font-sans uppercase tracking-widest uppercase tracking-widest"><Card className="w-full max-w-md p-6 shadow-2xl uppercase tracking-widest"><h3 className="font-bold mb-4 font-sans text-xl tracking-tight text-slate-800 border-b pb-2 uppercase tracking-widest uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={(e)=>{e.preventDefault(); updateUserDB(editingUser);}} className="space-y-4 font-sans uppercase tracking-widest uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide uppercase tracking-widest uppercase tracking-widest font-sans">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans uppercase tracking-widest" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide uppercase tracking-widest uppercase tracking-widest font-sans">Elaun Tetap (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans uppercase tracking-widest" value={editingUser.fixedAllowance} onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide font-sans uppercase tracking-widest uppercase tracking-widest font-sans">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans uppercase tracking-widest" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div><div className="bg-slate-50 p-3 rounded border font-sans uppercase tracking-widest uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-400 uppercase tracking-tighter uppercase tracking-widest uppercase tracking-widest font-sans tracking-widest">KWSP Manual (RM)</label><input type="number" className="w-full border p-1 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans uppercase tracking-widest uppercase tracking-widest shadow-sm" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div></div><div className="flex gap-2 pt-4 font-sans uppercase tracking-widest"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold hover:bg-slate-200 transition-colors uppercase text-xs uppercase tracking-widest font-sans uppercase tracking-widest uppercase tracking-widest">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow-md hover:bg-blue-700 transition-all uppercase text-xs uppercase tracking-widest font-sans uppercase tracking-widest shadow-blue-200">Simpan</button></div></form></Card></div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden animate-in zoom-in duration-200 font-sans uppercase tracking-widest"><Card className="w-full max-w-md p-6 shadow-2xl"><h3 className="font-bold mb-4 font-sans text-xl tracking-tight text-slate-800 border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={(e)=>{e.preventDefault(); updateUserDB(editingUser);}} className="space-y-4 font-sans uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide font-sans">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide font-sans">Elaun Tetap (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.fixedAllowance} onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-wide font-sans">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div><div className="bg-slate-50 p-3 rounded border font-sans uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-400 uppercase tracking-tighter font-sans tracking-widest">KWSP Manual (RM)</label><input type="number" className="w-full border p-1 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-sans shadow-sm" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div></div><div className="flex gap-2 pt-4 font-sans uppercase tracking-widest"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold hover:bg-slate-200 transition-colors uppercase text-xs tracking-widest font-sans">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow-md hover:bg-blue-700 transition-all uppercase text-xs tracking-widest font-sans shadow-blue-200">Simpan</button></div></form></Card></div>
             )}
             {showPasswordModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in zoom-in duration-200 font-sans uppercase tracking-widest"><Card className="w-full max-w-sm p-6 shadow-2xl uppercase tracking-widest uppercase tracking-widest"><h3 className="font-bold text-lg mb-4 font-sans tracking-tight uppercase border-b pb-2 uppercase tracking-widest uppercase tracking-widest uppercase tracking-widest font-sans">Tukar Password</h3><form onSubmit={handleChangePassword} className="space-y-4 font-sans uppercase tracking-widest uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-500 uppercase uppercase tracking-widest uppercase tracking-widest font-sans tracking-widest uppercase">Password Baru</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all font-sans uppercase tracking-widest shadow-sm" onChange={e => setNewPasswordData({...newPasswordData, new: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase uppercase tracking-widest uppercase tracking-widest font-sans tracking-widest uppercase">Sahkan Password</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all font-sans uppercase tracking-widest shadow-sm" onChange={e => setNewPasswordData({...newPasswordData, confirm: e.target.value})} /></div><div className="flex gap-2 pt-2 font-sans uppercase tracking-widest"><button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase transition-colors hover:bg-slate-200 uppercase tracking-widest text-xs font-sans uppercase tracking-widest">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow hover:bg-blue-700 transition-colors uppercase uppercase tracking-widest text-xs font-sans uppercase tracking-widest shadow-blue-200">Tukar</button></div></form></Card></div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in zoom-in duration-200 font-sans uppercase tracking-widest"><Card className="w-full max-w-sm p-6 shadow-2xl"><h3 className="font-bold text-lg mb-4 font-sans tracking-tight uppercase border-b pb-2 uppercase tracking-widest">Tukar Password</h3><form onSubmit={handleChangePassword} className="space-y-4 font-sans uppercase tracking-widest"><div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Password Baru</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all font-sans shadow-sm" onChange={e => setNewPasswordData({...newPasswordData, new: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans">Sahkan Password</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all font-sans shadow-sm" onChange={e => setNewPasswordData({...newPasswordData, confirm: e.target.value})} /></div><div className="flex gap-2 pt-2 font-sans uppercase tracking-widest"><button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase transition-colors hover:bg-slate-200 text-xs font-sans">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow hover:bg-blue-700 transition-colors uppercase text-xs font-sans shadow-blue-200">Tukar</button></div></form></Card></div>
             )}
         </main>
     </div>
