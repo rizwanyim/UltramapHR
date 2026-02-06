@@ -73,7 +73,7 @@ const UltramapLogo = ({ className = "h-10" }) => (
   <img 
     src="/logo.png" 
     alt="ULTRAMAP SOLUTION" 
-    className={`${className} w-auto object-contain mx-auto lg:mx-0`} 
+    className={`${className} w-auto object-contain mx-0`} 
     onError={(e) => {
       e.target.style.display = 'none';
       e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl">ULTRAMAP</span>'; 
@@ -291,18 +291,18 @@ const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, 
         <div className="mt-8 pt-8 border-t no-print">
             <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-widest text-sm"><FileText size={20}/> Arkib Slip Gaji</h3>
             <div className="flex gap-4 mb-4">
-                {[2025, 2026].map(year => (<button key={year} onClick={() => setSelectedYear(year)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 font-sans ${selectedYear === year ? 'border-blue-600 text-blue-600 bg-blue-50 font-bold' : 'border-transparent text-slate-50'}`}>{year}</button>))}
+                {[2025, 2026].map(year => (<button key={year} onClick={() => setSelectedYear(year)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 font-sans transition-colors ${selectedYear === year ? 'border-blue-600 text-blue-600 bg-blue-50 font-bold' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>{year}</button>))}
             </div>
             <div className="bg-slate-50 p-4 rounded-b-lg border border-slate-200 min-h-[100px]">
                 {availableMonths.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {availableMonths.map((date, idx) => (
-                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:border-blue-300 transition-all">
                                 <span className="text-sm font-bold uppercase font-sans">{date.toLocaleDateString('ms-MY', { month: 'short' })}</span><Download size={14} className="text-slate-300"/>
                             </button>
                         ))}
                     </div>
-                ) : <div className="text-center text-slate-400 py-4 text-xs italic">Tiada rekod.</div>}
+                ) : <div className="text-center text-slate-400 py-4 text-xs italic">Tiada rekod tersedia bagi tahun ini.</div>}
             </div>
         </div>
     );
@@ -323,7 +323,7 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
             </div>
             {selectedUser && (
                 <div className="space-y-2">
-                    <p className="text-[10px] bg-blue-50 text-blue-700 p-2 rounded border border-blue-100 font-bold uppercase tracking-widest mb-2">Remark: Baki Cuti {users.find(u=>u.id===selectedUser)?.nickname} tinggal {getRemaining(selectedUser)} Hari</p>
+                    <p className="text-[10px] bg-blue-50 text-blue-700 p-2 rounded border border-blue-100 font-bold uppercase tracking-widest mb-2">Baki Cuti {users.find(u=>u.id===selectedUser)?.nickname} tinggal {getRemaining(selectedUser)} Hari</p>
                     <div className="max-h-40 overflow-y-auto space-y-2">
                         {leaves.filter(l => l.userId === selectedUser).map((l, idx) => (
                             <div key={idx} className="flex justify-between items-center text-sm border-b pb-1 bg-white p-2 rounded shadow-sm">
@@ -371,6 +371,7 @@ export default function App() {
   }, []);
 
   const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Gagal Log Masuk!"); } };
+  
   const updateTimesheetStatusDB = async (userId, status) => {
       const today = new Date();
       const mStr = (today.getDate() <= 5 ? new Date(today.getFullYear(), today.getMonth() - 1, 1) : today).toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
@@ -382,15 +383,15 @@ export default function App() {
   const calculatePayroll = (userId, forMonthDate = currentDate) => {
     const user = users.find(u => u.id === userId);
     if (!user) return {};
-    const epf = (user.customEpf !== null) ? user.customEpf : (user.baseSalary * 0.11);
-    const socso = (user.customSocso !== null) ? user.customSocso : (user.baseSalary * 0.005 + 5);
+    const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
+    const socso = (user.customSocso !== null && user.customSocso !== undefined) ? user.customSocso : (user.baseSalary * 0.005 + 5);
     const siteDays = attendance.filter(a => { const d = new Date(a.date); return a.userId === userId && d.getMonth() === forMonthDate.getMonth() && d.getFullYear() === forMonthDate.getFullYear(); }).length;
     const meal = user.role === 'staff' ? siteDays * 15 : 0;
     return { month: forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase(), basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: meal, otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance + meal - epf - socso) };
   };
 
-  const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const effectiveCutoff = settings.customSubmissionDate || lastDayOfMonth;
+  const lastDayOfMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const effectiveCutoff = settings.customSubmissionDate || lastDayOfMonthDate;
   const isCutoffReached = currentDate.getDate() >= effectiveCutoff;
 
   if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans"><Card className="w-full max-w-sm p-8"><div className="flex justify-center mb-6"><UltramapLogo /></div><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold uppercase tracking-widest text-sm">Masuk</button></form></Card></div>;
@@ -398,11 +399,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
         <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm print:hidden">
-            <UltramapLogo /><button onClick={() => signOut(auth)} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold uppercase tracking-widest">Keluar</button>
+            <UltramapLogo /><button onClick={() => signOut(auth)} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold uppercase tracking-widest hover:bg-slate-300">Keluar</button>
         </nav>
         <main className="max-w-7xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
-                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 font-bold uppercase tracking-widest text-xs"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
+                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 font-bold uppercase tracking-widest text-xs hover:text-slate-800"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
             ) : (
                 <div className="space-y-6">
                     <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-widest border-b-2 border-blue-600 inline-block">Hi! {currentUser.nickname}!</h1>
@@ -410,7 +411,7 @@ export default function App() {
                         <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
                             <p className="text-slate-400 text-xs mb-1 uppercase tracking-widest">Anggaran Gaji</p>
                             <h2 className="text-2xl lg:text-3xl font-bold mt-1">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
-                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 py-1 px-3 rounded text-[10px] font-bold mt-2 uppercase tracking-widest">Slip Gaji</button>
+                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 py-1 px-3 rounded text-[10px] font-bold mt-2 uppercase tracking-widest hover:bg-white/30">Slip Gaji</button>
                         </div>
                         <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center"><p className="text-slate-500 text-xs mb-1 uppercase tracking-widest">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800">{(users.find(u=>u.id===currentUser.id)?.leaveBalance || 14) - leaves.filter(l=>l.userId===currentUser.id && l.status==='Approved').reduce((acc,curr)=>acc+(curr.days||0),0)} Hari</h2></div>
                     </div>
@@ -418,22 +419,26 @@ export default function App() {
                         <div className="space-y-6">
                             {currentUser.role !== 'staff' ? (
                                 <>
-                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Settings size={20}/> Tetapan Cutoff</h3><input type="number" placeholder="Bulan" value={settings.customSubmissionDate || ''} onChange={(e) => updateDoc(doc(db, "settings", "global"), { customSubmissionDate: e.target.value ? Number(e.target.value) : null })} className="w-20 border rounded p-1 font-bold text-lg text-center" /></Card>
-                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-2 text-[10px]">Nama</th><th className="p-2 text-[10px]">Basic</th><th className="p-2 text-[10px] text-center">Cuti</th><th className="p-2 text-[10px]">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b font-sans hover:bg-slate-50"><td className="p-2 font-bold uppercase">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px]">Edit</button></td></tr>))}</tbody></table></Card>
+                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Settings size={20}/> Tetapan Cutoff</h3><input type="number" placeholder="Hujung Bulan" value={settings.customSubmissionDate || ''} onChange={(e) => updateDoc(doc(db, "settings", "global"), { customSubmissionDate: e.target.value ? Number(e.target.value) : null })} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" /></Card>
+                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-2 text-[10px]">Nama</th><th className="p-2 text-[10px]">Basic</th><th className="p-2 text-[10px] text-center">Cuti</th><th className="p-2 text-[10px]">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b font-sans hover:bg-slate-50"><td className="p-2 font-bold uppercase">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td></tr>))}</tbody></table></Card>
                                 </>
                             ) : (
                                 <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={(dateStr, userId, type, shouldDelete, remark) => { const existing = attendance.find(a => a.date === dateStr && a.userId === userId); if (shouldDelete && existing) deleteDoc(doc(db, "attendance", existing.id)); else if (existing) updateDoc(doc(db, "attendance", existing.id), { remark }); else addDoc(collection(db, "attendance"), { date: dateStr, userId, type, remark }); }} tsStatus={timesheets.find(t => t.userId === currentUser.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' }} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
                             )}
-                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Dihantar!");}} className="space-y-3"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full" required/><input name="e" type="date" className="border p-2 rounded w-full" required/></div><input name="r" placeholder="Sebab Cuti" className="border p-2 rounded w-full" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold uppercase text-xs tracking-widest">Hantar Permohonan</button></form></Card>
+                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Permohonan dihantar!");}} className="space-y-3"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full" required/><input name="e" type="date" className="border p-2 rounded w-full" required/></div><input name="r" placeholder="Sebab Cuti" className="border p-2 rounded w-full" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold uppercase text-xs tracking-widest hover:bg-slate-900">Hantar Permohonan</button></form></Card>
                             <Card className="p-6 shadow-sm">
                                 <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-sm uppercase tracking-widest"><History size={18} /> Sejarah Cuti Saya</h3>
                                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                                     {leaves.filter(l => l.userId === currentUser.id).sort((a,b) => new Date(b.startDate) - new Date(a.startDate)).map(leave => (
-                                        <div key={leave.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50">
-                                            <div><p className="text-xs font-bold text-slate-700">{leave.startDate} - {leave.endDate}</p><p className="text-[10px] text-slate-500 uppercase">{leave.reason} ({leave.days} Hari)</p></div>
+                                        <div key={leave.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50 transition-all hover:border-blue-200">
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-700">{leave.startDate} - {leave.endDate}</p>
+                                                <p className="text-[10px] text-slate-500 uppercase">{leave.reason} ({leave.days} Hari)</p>
+                                                {leave.status === 'Approved' && leave.approvedBy && (<p className="text-[9px] text-emerald-600 font-bold mt-1">Approved by {leave.approvedBy}</p>)}
+                                            </div>
                                             <div className="flex items-center gap-3">
                                                 <Badge status={leave.status} />
-                                                {new Date() <= new Date(leave.endDate) && (<button onClick={async () => { if(confirm("Batal?")) await deleteDoc(doc(db, "leaves", leave.id)); }} className="text-red-400 p-1"><Trash2 size={16} /></button>)}
+                                                {new Date() <= new Date(leave.endDate) && (<button onClick={async () => { if(confirm("Batal permohonan ini?")) await deleteDoc(doc(db, "leaves", leave.id)); }} className="text-red-400 p-1 hover:text-red-600"><Trash2 size={16} /></button>)}
                                             </div>
                                         </div>
                                     ))}
@@ -450,19 +455,19 @@ export default function App() {
                                             <div className="mt-2 space-y-2">
                                                 <TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={()=>{}} tsStatus={ts} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} />
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-red-500 font-bold py-2 bg-red-50 rounded uppercase">Tutup</button>
+                                                    <button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-red-500 font-bold py-2 bg-red-50 rounded uppercase hover:bg-red-100 transition-colors">Tutup</button>
                                                     {ts.status === 'Approved' ? (
-                                                        <button onClick={() => updateTimesheetStatusDB(staff.id, 'Submitted')} className="flex-1 text-xs text-white font-bold py-2 bg-orange-500 rounded uppercase shadow-sm">Buka Semula</button>
+                                                        <button onClick={() => updateTimesheetStatusDB(staff.id, 'Draft')} className="flex-1 text-xs text-white font-bold py-2 bg-orange-500 rounded uppercase shadow-sm hover:bg-orange-600 transition-colors">Buka Semula (Draft)</button>
                                                     ) : (
-                                                        <button disabled={!isCutoffReached} onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')} className={`flex-1 text-xs text-white font-bold py-2 rounded uppercase shadow-sm ${isCutoffReached ? 'bg-emerald-600' : 'bg-slate-300'}`}>{isCutoffReached ? "Luluskan" : `Lulus (Hanya ${effectiveCutoff}hb)`}</button>
+                                                        <button disabled={!isCutoffReached} onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')} className={`flex-1 text-xs text-white font-bold py-2 rounded uppercase shadow-sm transition-all ${isCutoffReached ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-300 cursor-not-allowed'}`}>{isCutoffReached ? "Luluskan" : `Lulus (Hanya ${effectiveCutoff}hb)`}</button>
                                                     )}
                                                 </div>
                                             </div>
-                                        ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold uppercase">Semak & Luluskan</button>)}</Card>);
+                                        ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold uppercase hover:bg-slate-200 transition-colors">Semak & Luluskan</button>)}</Card>);
                                     })}</div></div>
-                                    <Card className="p-6 shadow-sm"><h3 className="font-bold mb-4 uppercase text-sm tracking-widest">Pengesahan Cuti (Admin)</h3>
-                                        {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50"><div className="text-xs"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><button onClick={()=>updateDoc(doc(db, "leaves", leave.id), { status: 'Approved', approvedBy: currentUser.nickname })} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold">Lulus</button></div>))}
-                                        {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic">Tiada permohonan.</p>}
+                                    <Card className="p-6 shadow-sm"><h3 className="font-bold mb-4 uppercase text-sm tracking-widest border-b pb-2">Pengesahan Cuti (Admin)</h3>
+                                        {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 hover:border-emerald-200 transition-all"><div className="text-xs"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><button onClick={()=>updateDoc(doc(db, "leaves", leave.id), { status: 'Approved', approvedBy: currentUser.nickname })} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-emerald-700 transition-colors">Lulus</button></div>))}
+                                        {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic">Tiada permohonan cuti baru.</p>}
                                         <LeaveHistoryViewer users={users} leaves={leaves} />
                                     </Card>
                                 </>
@@ -473,14 +478,14 @@ export default function App() {
                 </div>
             )}
             {editingUser && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya!");}} className="space-y-4">
-                    <div><label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
+                    <div><label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
                     <div className="grid grid-cols-2 gap-2">
-                        <div><label className="text-xs font-bold text-slate-400 uppercase">KWSP Manual (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
-                        <div><label className="text-xs font-bold text-slate-400 uppercase">SOCSO Manual (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div>
+                        <div><label className="text-xs font-bold text-slate-400 uppercase">KWSP Manual (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
+                        <div><label className="text-xs font-bold text-slate-400 uppercase">SOCSO Manual (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div>
                     </div>
-                    <div><label className="text-xs font-bold text-slate-500 uppercase">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
-                    <div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md shadow-blue-200">Simpan</button></div>
+                    <div><label className="text-xs font-bold text-slate-500 uppercase">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
+                    <div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200 transition-colors">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md shadow-blue-200 hover:bg-blue-700 transition-all">Simpan</button></div>
                 </form></Card></div>
             )}
         </main>
