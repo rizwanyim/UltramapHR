@@ -24,6 +24,14 @@ try {
   console.error("Firebase Init Error:", e);
 }
 
+// Senarai email dikemaskini mengikut rekod Authentication anda (@gmail.com)
+const SEED_USERS = [
+  { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
+  { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
+  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
+  { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
+];
+
 const JOHOR_HOLIDAYS = [
   { date: '2025-07-07', name: 'Awal Muharram' }, 
   { date: '2025-07-27', name: 'Hol Almarhum Sultan Iskandar' }, 
@@ -52,6 +60,7 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
 
+// --- HELPER COMPONENTS ---
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>
     {children}
@@ -81,6 +90,7 @@ const UltramapLogo = ({ className = "h-10" }) => (
   />
 );
 
+// --- HELPER FUNCTIONS ---
 const calculateLeaveDuration = (startDate, endDate) => {
   if (!startDate || !endDate) return 0;
   let count = 0;
@@ -96,6 +106,7 @@ const calculateLeaveDuration = (startDate, endDate) => {
   return count;
 };
 
+// --- PAYSLIP DESIGN ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
@@ -174,32 +185,57 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   const displayYear = displayDate.getFullYear();
   const displayMonth = displayDate.getMonth();
   const getMonthStr = (d) => d.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
+  
+  const lastDayOfDispMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
+  const effectiveCutoff = customSubmissionDate || lastDayOfDispMonth;
+  const isSubmissionOpen = (swipeIndex === 0 && currentDate.getDate() >= effectiveCutoff);
   const isPastCutoff = customSubmissionDate !== null && currentDate.getDate() >= customSubmissionDate;
 
   const handleToggle = (day) => {
     const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    if (JOHOR_HOLIDAYS.some(h => h.date === dateStr)) return;
+    const holidayInfo = JOHOR_HOLIDAYS.find(h => h.date === dateStr);
+    
     const isCurrentMonthView = swipeIndex === 0;
     const entry = attendance.find(a => a.date === dateStr && a.userId === targetUserId);
+
     if (isAdminView || !isCurrentMonthView) {
         if (entry) { setSelectedDayInfo({ day, dateStr, existingRemark: entry.remark }); setTempRemark(entry.remark || ""); setIsRemarkModalOpen(true); }
         else if (!isAdminView) { alert("Anda hanya boleh mengemaskini timesheet untuk bulan semasa."); }
         return; 
     }
+
     let isLocked = (isPastCutoff && day <= customSubmissionDate) || (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved');
     if (isLocked) { alert("Tarikh ini dikunci."); return; }
-    if (entry) { setSelectedDayInfo({ day, dateStr, existingRemark: entry.remark }); setTempRemark(entry.remark || ""); setIsRemarkModalOpen(true); }
-    else {
+    
+    if (holidayInfo) {
+      if (!window.confirm(`Hari ini Cuti Umum (${holidayInfo.name}). Confirm kerja Site?`)) return;
+    }
+
+    if (entry) {
+        setSelectedDayInfo({ day, dateStr, existingRemark: entry.remark });
+        setTempRemark(entry.remark || "");
+        setIsRemarkModalOpen(true);
+    } else {
         const clickedDate = new Date(displayYear, displayMonth, day);
-        if (clickedDate.getDay() === 0 && !window.confirm("Hari ini Ahad. Confirm kerja Site?")) return;
-        setSelectedDayInfo({ day, dateStr }); setTempRemark(""); setIsRemarkModalOpen(true);
+        if (clickedDate.getDay() === 0) { 
+            if (!window.confirm("Hari ini Ahad. Confirm kerja Site?")) return;
+        }
+        setSelectedDayInfo({ day, dateStr });
+        setTempRemark("");
+        setIsRemarkModalOpen(true);
     }
   };
 
-  const dayArray = Array.from({ length: new Date(displayYear, displayMonth + 1, 0).getDate() }, (_, i) => i + 1);
+  const dayArray = Array.from({ length: lastDayOfDispMonth }, (_, i) => i + 1);
   const emptySlots = Array.from({ length: new Date(displayYear, displayMonth, 1).getDay() });
-  const displayCount = attendance.filter(a => { const d = new Date(a.date); return a.userId === targetUserId && d.getMonth() === displayMonth && d.getFullYear() === displayYear; }).length;
-  const currentMonthHolidays = JOHOR_HOLIDAYS.filter(h => { const hd = new Date(h.date); return hd.getMonth() === displayMonth && hd.getFullYear() === displayYear; });
+  const displayCount = attendance.filter(a => {
+      const d = new Date(a.date);
+      return a.userId === targetUserId && d.getMonth() === displayMonth && d.getFullYear() === displayYear;
+  }).length;
+  const currentMonthHolidays = JOHOR_HOLIDAYS.filter(h => {
+    const hd = new Date(h.date);
+    return hd.getMonth() === displayMonth && hd.getFullYear() === displayYear;
+  });
 
   return (
     <Card className="p-6 relative shadow-sm border border-slate-200">
@@ -211,6 +247,13 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
               <button onClick={() => setSwipeIndex(prev => Math.min(1, prev + 1))} className={`p-1.5 rounded-full transition-all ${swipeIndex < 1 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronRight size={16} /></button>
           </div>
       </div>
+      {tsStatus.status === 'Approved' && tsStatus.approvedBy && (
+          <div className="mb-2 flex justify-end">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded flex items-center gap-1 font-sans uppercase tracking-widest">
+                  <ShieldCheck size={10} /> Disahkan oleh: <b>{tsStatus.approvedBy}</b>
+              </span>
+          </div>
+      )}
       <div className="mb-4">
         <div className="grid grid-cols-7 gap-1 font-sans tracking-tighter uppercase mb-2">
             {['A','I','S','R','K','J','S'].map((d, i) => (<div key={`h-${i}`} className="text-center text-[10px] font-bold text-slate-400">{d}</div>))}
@@ -242,9 +285,15 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             </div>
         )}
         <div className="flex justify-between items-center">
-            <div><p className="text-xs text-slate-500 uppercase font-bold font-sans tracking-widest">Jumlah Hari Kerja</p><p className="text-xl font-bold text-emerald-600 font-sans tracking-tight">{displayCount} Hari</p></div>
+            <div><p className="text-xs text-slate-500 uppercase font-bold font-sans tracking-widest">Jumlah Hari Kerja</p><p className="text-xl font-bold text-emerald-600 font-sans tracking-tight uppercase">{displayCount} Hari</p></div>
             {!isAdminView && (tsStatus.status === 'Draft' || tsStatus.status === 'Rejected') && swipeIndex === 0 && (
-                <button onClick={() => updateTimesheetStatus(targetUserId, 'Submitted')} className="bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs shadow-lg uppercase tracking-widest">Hantar untuk Semakan</button>
+                <button 
+                  disabled={!isSubmissionOpen}
+                  onClick={() => updateTimesheetStatus(targetUserId, 'Submitted')} 
+                  className={`px-4 py-2 rounded font-bold text-xs shadow-lg uppercase tracking-widest transition-all ${isSubmissionOpen ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                >
+                    {isSubmissionOpen ? "Hantar untuk Semakan" : `Hantar (${effectiveCutoff}hb)`}
+                </button>
             )}
         </div>
       </div>
@@ -323,7 +372,7 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
             </div>
             {selectedUser && (
                 <div className="space-y-2">
-                    <p className="text-[10px] bg-blue-50 text-blue-700 p-2 rounded border border-blue-100 font-bold uppercase tracking-widest mb-2">Baki Cuti {users.find(u=>u.id===selectedUser)?.nickname} tinggal {getRemaining(selectedUser)} Hari</p>
+                    <p className="text-[10px] bg-blue-50 text-blue-700 p-2 rounded border border-blue-100 font-bold uppercase tracking-widest mb-2">Baki cuti tinggal {getRemaining(selectedUser)} Hari</p>
                     <div className="max-h-40 overflow-y-auto space-y-2">
                         {leaves.filter(l => l.userId === selectedUser).map((l, idx) => (
                             <div key={idx} className="flex justify-between items-center text-sm border-b pb-1 bg-white p-2 rounded shadow-sm">
@@ -371,8 +420,7 @@ export default function App() {
   }, []);
 
   const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Gagal Log Masuk!"); } };
-  const handleLogout = () => signOut(auth);
-
+  
   const updateTimesheetStatusDB = async (userId, status) => {
       const today = new Date();
       const mStr = (today.getDate() <= 5 ? new Date(today.getFullYear(), today.getMonth() - 1, 1) : today).toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
@@ -400,7 +448,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
         <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm print:hidden">
-            <UltramapLogo /><button onClick={handleLogout} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold uppercase tracking-widest hover:bg-slate-300 transition-colors">Keluar</button>
+            <UltramapLogo /><button onClick={() => signOut(auth)} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold uppercase tracking-widest hover:bg-slate-300 transition-colors">Keluar</button>
         </nav>
         <main className="max-w-7xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
@@ -488,9 +536,6 @@ export default function App() {
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
                     <div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200 transition-colors">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md shadow-blue-200 hover:bg-blue-700 transition-all">Simpan</button></div>
                 </form></Card></div>
-            )}
-            {showPasswordModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in zoom-in duration-200"><Card className="w-full max-w-sm p-6 shadow-2xl"><h3 className="font-bold text-lg mb-4 uppercase border-b pb-2">Tukar Password</h3><form onSubmit={async (e) => { e.preventDefault(); if(newPasswordData.new !== newPasswordData.confirm) return alert("Password tidak sama!"); try { await updatePassword(auth.currentUser, newPasswordData.new); alert("Berjaya! Sila login semula."); signOut(auth); } catch(err) { alert("Gagal: " + err.message); } }} className="space-y-4"><div><label className="text-xs font-bold text-slate-500 uppercase">Password Baru</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all shadow-sm" onChange={e => setNewPasswordData({...newPasswordData, new: e.target.value})} /></div><div><label className="text-xs font-bold text-slate-500 uppercase">Sahkan Password</label><input type="password" required className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-400 transition-all shadow-sm" onChange={e => setNewPasswordData({...newPasswordData, confirm: e.target.value})} /></div><div className="flex gap-2 pt-2"><button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase hover:bg-slate-200 transition-colors text-xs">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold shadow hover:bg-blue-700 transition-colors text-xs">Tukar</button></div></form></Card></div>
             )}
         </main>
     </div>
