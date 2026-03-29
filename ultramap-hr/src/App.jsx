@@ -96,17 +96,20 @@ const calculateLeaveDuration = (startDate, endDate) => {
   return count;
 };
 
+// --- PAYSLIP DESIGN (DIKEMASKINI) ---
 const PayslipDesign = ({ data, user }) => {
-  const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
+  // Hanya kira Basic, Allowance, Meal Allowance
+  const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance;
   const totalDeductions = data.epf + data.socso;
   const netPay = totalEarnings - totalDeductions;
+
   return (
     <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:bg-white print:p-0 print:m-0 print:overflow-hidden">
       <style>{`@media print { @page { size: A4 landscape; margin: 0; } body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; } }`}</style>
       <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:scale-[0.96] print:origin-top-left flex flex-col box-border overflow-hidden">
         <div className="flex-grow pb-[70mm]">
             <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
-              <div><UltramapLogo /></div> 
+              <div><UltramapLogo className="h-20" /></div> 
               <div className="text-right">
                 <p className="font-bold uppercase text-xs mb-1 text-slate-500 font-sans tracking-widest text-right uppercase">Private & Confidential</p>
                 <h2 className="text-xl font-bold text-slate-800 tracking-wide font-sans text-right uppercase">ULTRAMAP SOLUTION</h2>
@@ -115,31 +118,30 @@ const PayslipDesign = ({ data, user }) => {
             </div>
             <div className="flex justify-between mb-8 border-b border-slate-300 pb-6 gap-10">
                 <div className="space-y-3 w-1/2">
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal uppercase">Name</span><span className="uppercase font-semibold truncate">: {user.name}</span></div>
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal uppercase">I/C No</span><span className="font-semibold font-sans">: {user.ic}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Name</span><span className="uppercase font-semibold truncate">: {user.name}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">I/C No</span><span className="font-semibold font-sans uppercase">: {user.ic}</span></div>
                 </div>
                 <div className="space-y-3 w-1/2 pl-8 border-l border-dashed border-slate-200">
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal tracking-tight uppercase tracking-wider text-right md:text-left">Job Title</span><span className="uppercase font-semibold">: {user.position}</span></div>
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal tracking-tight uppercase tracking-wider text-right md:text-left">Payslip For</span><span className="uppercase font-semibold">: {data.month}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Job Title</span><span className="uppercase font-semibold">: {user.position}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Payslip For</span><span className="uppercase font-semibold">: {data.month}</span></div>
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-16 mb-4 h-[250px]">
               <div className="flex flex-col justify-between">
                 <div>
-                    <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm font-sans text-slate-700 uppercase tracking-widest">Earnings (RM)</div>
+                    <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-widest text-sm font-sans text-slate-700">Earnings (RM)</div>
                     <div className="space-y-2 text-sm font-sans">
                       <div className="flex justify-between"><span>BASIC SALARY</span><span className="font-semibold">{data.basicSalary.toFixed(2)}</span></div>
                       <div className="flex justify-between"><span>ALLOWANCE</span><span className="font-semibold">{data.allowance.toFixed(2)}</span></div>
                       <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span className="font-semibold">{data.mealAllowance.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-slate-400 font-medium"><span>OT ALLOWANCE</span><span className="font-semibold">{data.otAllowance.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-slate-400 font-medium"><span>BONUS</span><span className="font-semibold">{data.bonus.toFixed(2)}</span></div>
+                      {/* Baris OT & Bonus Dibuang */}
                     </div>
                 </div>
                 <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4 font-sans text-slate-900 uppercase"><span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span></div>
               </div>
               <div className="flex flex-col justify-between pl-8 border-l border-dashed border-slate-200">
                 <div>
-                  <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-wider text-sm font-sans text-slate-700 uppercase tracking-widest">Deduction (RM)</div>
+                  <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-widest text-sm font-sans text-slate-700">Deduction (RM)</div>
                   <div className="space-y-2 text-sm font-sans">
                     <div className="flex justify-between"><span>EPF (KWSP)</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
                     <div className="flex justify-between"><span>SOCSO (PERKESO)</span><span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span></div>
@@ -165,6 +167,7 @@ const PayslipDesign = ({ data, user }) => {
   );
 };
 
+// --- TIMESHEET WIDGET ---
 const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, attendance, setAttendance, tsStatus, updateTimesheetStatus, isAdminView }) => {
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false);
@@ -195,7 +198,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
     let isLocked = (isPastCutoff && day <= customSubmissionDate) || (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved');
     if (isLocked) { alert("Tarikh ini dikunci."); return; }
     
-    // Alert untuk Cuti Umum
     if (holidayInfo) {
       if (!window.confirm(`Hari ini Cuti Umum (${holidayInfo.name}). Confirm kerja Site?`)) return;
     }
@@ -307,6 +309,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   );
 };
 
+// --- PAYSLIP ARCHIVE FOLDER ---
 const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus, currentDate }) => {
     const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear()); 
     const getAvailableMonths = (year) => {
@@ -346,6 +349,7 @@ const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, 
     );
 };
 
+// --- LEAVE HISTORY VIEWER ---
 const LeaveHistoryViewer = ({ users, leaves }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const getRemaining = (uid) => {
@@ -376,6 +380,7 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
     );
 };
 
+// --- MAIN APP ---
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -447,7 +452,7 @@ export default function App() {
                     <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-widest border-b-2 border-blue-600 inline-block">Hi! {currentUser.nickname}!</h1>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
-                            <div className="flex justify-between items-start"><p className="text-slate-400 text-xs mb-1 uppercase tracking-widest">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white transition-colors">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
+                            <p className="text-slate-400 text-xs mb-1 uppercase tracking-widest">Anggaran Gaji</p>
                             <h2 className="text-2xl lg:text-3xl font-bold mt-1">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
                             <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 py-1 px-3 rounded text-[10px] font-bold mt-2 uppercase tracking-widest hover:bg-white/30">Slip Gaji</button>
                         </div>
@@ -516,7 +521,7 @@ export default function App() {
                 </div>
             )}
             {editingUser && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
                     <div className="grid grid-cols-2 gap-2">
                         <div><label className="text-xs font-bold text-slate-400 uppercase">KWSP Manual (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
