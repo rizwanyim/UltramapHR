@@ -70,15 +70,17 @@ const Badge = ({ status }) => {
 };
 
 const UltramapLogo = ({ className = "h-10" }) => (
-  <img 
-    src="/logo.png" 
-    alt="ULTRAMAP SOLUTION" 
-    className={`${className} w-auto object-contain mx-0`} 
-    onError={(e) => {
-      e.target.style.display = 'none';
-      e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl">ULTRAMAP</span>'; 
-    }}
-  />
+  <div className="flex justify-start">
+    <img 
+      src="/logo.png" 
+      alt="ULTRAMAP SOLUTION" 
+      className={`${className} w-auto object-contain`} 
+      onError={(e) => {
+        e.target.style.display = 'none';
+        e.target.parentNode.innerHTML = '<span class="font-bold text-red-600 text-2xl tracking-tighter">ULTRAMAP</span>'; 
+      }}
+    />
+  </div>
 );
 
 const calculateLeaveDuration = (startDate, endDate) => {
@@ -101,63 +103,58 @@ const PayslipDesign = ({ data, user }) => {
   const totalDeductions = data.epf + data.socso;
   const netPay = totalEarnings - totalDeductions;
   return (
-    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:bg-white print:p-0 print:m-0 print:overflow-hidden">
-      <style>{`@media print { @page { size: A4 landscape; margin: 0; } body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; } }`}</style>
-      <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:scale-[0.96] print:origin-top-left flex flex-col box-border overflow-hidden">
+    <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:bg-white print:p-0">
+      <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans relative print:shadow-none flex flex-col box-border">
         <div className="flex-grow pb-[70mm]">
             <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
               <div><UltramapLogo className="h-20" /></div> 
               <div className="text-right">
-                <p className="font-bold uppercase text-xs mb-1 text-slate-500 font-sans tracking-widest text-right uppercase">Private & Confidential</p>
-                <h2 className="text-xl font-bold text-slate-800 tracking-wide font-sans text-right uppercase">ULTRAMAP SOLUTION</h2>
-                <p className="text-[10px] text-slate-400 font-sans text-right uppercase tracking-tighter uppercase">Monthly Salary Slip</p>
+                <p className="font-bold uppercase text-xs mb-1 text-slate-500 tracking-widest uppercase">Private & Confidential</p>
+                <h2 className="text-xl font-bold text-slate-800 tracking-wide uppercase">ULTRAMAP SOLUTION</h2>
+                <p className="text-[10px] text-slate-400 uppercase tracking-tighter uppercase">Monthly Salary Slip</p>
               </div>
             </div>
             <div className="flex justify-between mb-8 border-b border-slate-300 pb-6 gap-10">
                 <div className="space-y-3 w-1/2">
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Name</span><span className="uppercase font-semibold truncate">: {user.name}</span></div>
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">I/C No</span><span className="font-semibold font-sans uppercase">: {user.ic}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase">Name</span><span className="uppercase font-semibold">: {user.name}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase">I/C No</span><span className="font-semibold uppercase">: {user.ic}</span></div>
                 </div>
                 <div className="space-y-3 w-1/2 pl-8 border-l border-dashed border-slate-200">
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Job Title</span><span className="uppercase font-semibold">: {user.position}</span></div>
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Payslip For</span><span className="uppercase font-semibold">: {data.month}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase">Job Title</span><span className="uppercase font-semibold">: {user.position}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase">Payslip For</span><span className="uppercase font-semibold">: {data.month}</span></div>
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-16 mb-4 h-[250px]">
-              <div className="flex flex-col justify-between">
-                <div>
-                    <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-widest text-sm font-sans text-slate-700">Earnings (RM)</div>
-                    <div className="space-y-2 text-sm font-sans">
-                      <div className="flex justify-between"><span>BASIC SALARY</span><span className="font-semibold">{data.basicSalary.toFixed(2)}</span></div>
-                      <div className="flex justify-between"><span>ALLOWANCE</span><span className="font-semibold">{data.allowance.toFixed(2)}</span></div>
-                      <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span className="font-semibold">{data.mealAllowance.toFixed(2)}</span></div>
-                    </div>
+              <div>
+                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase text-sm text-slate-700">Earnings (RM)</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span>BASIC SALARY</span><span className="font-semibold">{data.basicSalary.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>ALLOWANCE</span><span className="font-semibold">{data.allowance.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span className="font-semibold">{data.mealAllowance.toFixed(2)}</span></div>
                 </div>
-                <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4 font-sans text-slate-900 uppercase"><span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span></div>
+                <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4 text-slate-900 uppercase"><span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span></div>
               </div>
-              <div className="flex flex-col justify-between pl-8 border-l border-dashed border-slate-200">
-                <div>
-                  <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-widest text-sm font-sans text-slate-700">Deduction (RM)</div>
-                  <div className="space-y-2 text-sm font-sans">
-                    <div className="flex justify-between"><span>EPF (KWSP)</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>SOCSO (PERKESO)</span><span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span></div>
-                  </div>
+              <div className="pl-8 border-l border-dashed border-slate-200">
+                <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase text-sm text-slate-700">Deduction (RM)</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span>EPF (KWSP)</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>SOCSO (PERKESO)</span><span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span></div>
                 </div>
-                <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-auto text-slate-600 font-sans uppercase"><span>TOTAL DEDUCTION</span><span>{totalDeductions.toFixed(2)}</span></div>
+                <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-auto text-slate-600 uppercase"><span>TOTAL DEDUCTION</span><span>{totalDeductions.toFixed(2)}</span></div>
               </div>
             </div>
             <div className="bg-slate-100 border-y-4 border-slate-800 py-5 px-8 flex justify-between items-center mt-4">
-              <span className="font-bold text-lg uppercase tracking-widest text-slate-700 font-sans tracking-tight">NET PAY</span>
-              <span className="font-bold text-2xl text-slate-900 font-sans tracking-tight">RM {netPay.toFixed(2)}</span>
+              <span className="font-bold text-lg uppercase tracking-widest text-slate-700">NET PAY</span>
+              <span className="font-bold text-2xl text-slate-900">RM {netPay.toFixed(2)}</span>
             </div>
         </div>
-        <div className="absolute bottom-8 left-0 right-0 text-center px-12 pointer-events-none">
+        <div className="absolute bottom-8 left-0 right-0 text-center px-12">
             <div className="border-t border-slate-200 pt-3 text-center">
-                <p className="text-[10px] text-slate-400 leading-tight italic font-sans tracking-wider uppercase tracking-widest">This monthly salary slip is electronically generated and does not require any signature.</p>
-                <p className="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-widest font-sans">ULTRAMAP SOLUTION (JM0876813-V)</p>
+                <p className="text-[10px] text-slate-400 leading-tight italic uppercase">This monthly salary slip is electronically generated and does not require any signature.</p>
+                <p className="text-[11px] font-bold text-slate-500 mt-1 uppercase">ULTRAMAP SOLUTION (JM0876813-V)</p>
             </div>
         </div>
-        <div className="absolute top-4 right-4 print:hidden"><button onClick={() => window.print()} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 transition-all active:scale-95 shadow-blue-200"><Printer size={20} /> Cetak / Simpan PDF</button></div>
+        <div className="absolute top-4 right-4 print:hidden"><button onClick={() => window.print()} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg flex items-center gap-2 transition-all active:scale-95"><Printer size={20} /> Cetak / Simpan PDF</button></div>
       </div>
     </div>
   );
@@ -186,7 +183,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
 
     if (isAdminView || !isCurrentMonthView) {
         if (entry) { setSelectedDayInfo({ day, dateStr, existingRemark: entry.remark }); setTempRemark(entry.remark || ""); setIsRemarkModalOpen(true); }
-        else if (!isAdminView) { alert("Anda hanya boleh mengemaskini timesheet untuk bulan semasa."); }
+        else if (!isAdminView) { alert("Hanya bulan semasa sahaja."); }
         return; 
     }
 
@@ -221,7 +218,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
           <h3 className="font-bold text-lg flex items-center gap-2 text-slate-700 font-sans uppercase tracking-widest"><Calendar size={20} /> Timesheet</h3>
           <div className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200">
               <button onClick={() => setSwipeIndex(prev => Math.max(-6, prev - 1))} className={`p-1.5 rounded-full transition-all ${swipeIndex > -6 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronLeft size={16} /></button>
-              <span className="text-[10px] font-bold px-3 text-slate-600 uppercase min-w-[80px] text-center font-sans">{getMonthStr(displayDate)}</span>
+              <span className="text-[10px] font-bold px-3 text-slate-600 uppercase min-w-[80px] text-center">{getMonthStr(displayDate)}</span>
               <button onClick={() => setSwipeIndex(prev => Math.min(1, prev + 1))} className={`p-1.5 rounded-full transition-all ${swipeIndex < 1 ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}><ChevronRight size={16} /></button>
           </div>
       </div>
@@ -236,7 +233,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
         <div className="grid grid-cols-7 gap-1 font-sans tracking-tighter uppercase mb-2">
             {['A','I','S','R','K','J','S'].map((d, i) => (<div key={`h-${i}`} className="text-center text-[10px] font-bold text-slate-400">{d}</div>))}
         </div>
-        <div className="grid grid-cols-7 gap-1 font-sans">
+        <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: new Date(displayYear, displayMonth, 1).getDay() }).map((_, i) => <div key={`e-${i}`}></div>)}
             {Array.from({ length: lastDayOfDispMonth }, (_, i) => i + 1).map(day => {
                 const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -263,7 +260,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
             </div>
         )}
         <div className="flex justify-between items-center">
-            <div><p className="text-xs text-slate-500 uppercase font-bold font-sans tracking-widest">Jumlah Hari Kerja</p><p className="text-xl font-bold text-emerald-600 font-sans tracking-tight uppercase">{attendance.filter(a => { const d = new Date(a.date); return a.userId === targetUserId && d.getMonth() === displayMonth && d.getFullYear() === displayYear; }).length} Hari</p></div>
+            <div><p className="text-xs text-slate-500 uppercase font-bold tracking-widest">Jumlah Hari Kerja</p><p className="text-xl font-bold text-emerald-600 tracking-tight uppercase">{attendance.filter(a => { const d = new Date(a.date); return a.userId === targetUserId && d.getMonth() === displayMonth && d.getFullYear() === displayYear; }).length} Hari</p></div>
             {!isAdminView && (tsStatus.status === 'Draft' || tsStatus.status === 'Rejected') && swipeIndex === 0 && (
                 <button disabled={!isSubmissionOpen} onClick={() => updateTimesheetStatus(targetUserId, 'Submitted')} className={`px-4 py-2 rounded font-bold text-xs shadow-lg uppercase tracking-widest transition-all ${isSubmissionOpen ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>
                     {isSubmissionOpen ? "Hantar untuk Semakan" : `Hantar (${effectiveCutoff}hb)`}
@@ -273,9 +270,9 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
       </div>
       {isRemarkModalOpen && (
           <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <Card className="w-full max-w-sm p-6 shadow-2xl">
+              <Card className="w-full max-w-sm p-6 shadow-2xl animate-in zoom-in duration-200">
                   <div className="flex justify-between items-start mb-4">
-                      <div><h4 className="font-bold text-slate-800 text-lg uppercase font-sans">Nota Kehadiran</h4><p className="text-xs text-slate-500">{selectedDayInfo?.day}hb {getMonthStr(displayDate)}</p></div>
+                      <div><h4 className="font-bold text-slate-800 text-lg uppercase">Nota Kehadiran</h4><p className="text-xs text-slate-500">{selectedDayInfo?.day}hb {getMonthStr(displayDate)}</p></div>
                       <button onClick={() => setIsRemarkModalOpen(false)} className="p-1 hover:bg-slate-100 rounded-full transition-all"><X size={20}/></button>
                   </div>
                   <textarea className="w-full border-2 border-slate-200 rounded-xl p-3 text-sm focus:border-blue-500 outline-none mb-4" rows="3" value={tempRemark} onChange={(e) => setTempRemark(e.target.value)} readOnly={isAdminView || swipeIndex !== 0} />
@@ -292,69 +289,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   );
 };
 
-const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus, currentDate }) => {
-    const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear()); 
-    const getAvailableMonths = (year) => {
-        const months = [];
-        const today = new Date();
-        for (let i = 0; i <= today.getMonth(); i++) {
-            const d = new Date(year, i, 1);
-            if (currentUser.role === 'staff' && year === today.getFullYear() && i === today.getMonth() && timesheetStatus.status !== 'Approved') continue;
-            months.push(d);
-        }
-        return months;
-    };
-    return (
-        <div className="mt-8 pt-8 border-t no-print">
-            <h3 className="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2 font-sans uppercase tracking-widest text-sm"><FileText size={20}/> Arkib Slip Gaji</h3>
-            <div className="flex gap-4 mb-4">
-                {[2025, 2026].map(year => (<button key={year} onClick={() => setSelectedYear(year)} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 font-sans transition-colors ${selectedYear === year ? 'border-blue-600 text-blue-600 bg-blue-50 font-bold' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>{year}</button>))}
-            </div>
-            <div className="bg-slate-50 p-4 rounded-b-lg border border-slate-200 min-h-[100px]">
-                {getAvailableMonths(selectedYear).length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {getAvailableMonths(selectedYear).map((date, idx) => (
-                            <button key={idx} onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id, date), user: currentUser })} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:border-blue-300 transition-all">
-                                <span className="text-sm font-bold uppercase font-sans">{date.toLocaleDateString('ms-MY', { month: 'short' })}</span><Download size={14} className="text-slate-300"/>
-                            </button>
-                        ))}
-                    </div>
-                ) : <div className="text-center text-slate-400 py-4 text-xs italic">Tiada rekod tersedia.</div>}
-            </div>
-        </div>
-    );
-};
-
-const LeaveHistoryViewer = ({ users, leaves }) => {
-    const [selectedUser, setSelectedUser] = useState(null);
-    const getRemaining = (uid) => {
-        const u = users.find(x => x.id === uid);
-        const approved = leaves.filter(l => l.userId === uid && l.status === 'Approved').reduce((acc, curr) => acc + (curr.days || 0), 0);
-        return (u?.leaveBalance || 14) - approved;
-    };
-    return (
-        <Card className="mt-4 p-4 bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest"><History size={14}/> Sejarah Cuti Semua Staff</h4>
-            <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
-                {users.map(u => (<button key={u.id} onClick={() => setSelectedUser(u.id === selectedUser ? null : u.id)} className={`px-3 py-1 rounded text-[10px] font-bold whitespace-nowrap uppercase ${selectedUser === u.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white border text-slate-600'}`}>{u.nickname}</button>))}
-            </div>
-            {selectedUser && (
-                <div className="space-y-2">
-                    <p className="text-[10px] bg-blue-50 text-blue-700 p-2 rounded border border-blue-100 font-bold uppercase tracking-widest mb-2">Baki cuti tinggal {getRemaining(selectedUser)} Hari</p>
-                    <div className="max-h-40 overflow-y-auto space-y-2">
-                        {leaves.filter(l => l.userId === selectedUser).map((l, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-sm border-b pb-1 bg-white p-2 rounded shadow-sm">
-                                <div><span className="font-bold block">{l.startDate} - {l.endDate}</span><span className="text-[10px] text-slate-500 uppercase">{l.reason} ({l.days} Hari)</span></div>
-                                <Badge status={l.status} />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </Card>
-    );
-};
-
+// --- MAIN APP ---
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -379,6 +314,7 @@ export default function App() {
         onSnapshot(query(collection(db, "users"), where("email", "==", user.email)), (s) => { if (!s.empty) setCurrentUser({ ...s.docs[0].data(), id: s.docs[0].id }); });
       } else setCurrentUser(null);
     });
+    // PASTIKAN RULES FIRESTORE DIBUKA UNTUK KOLEKSI-KOLEKSI INI
     onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
     onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
     onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
@@ -404,26 +340,26 @@ export default function App() {
     const socso = user.customSocso ?? (user.baseSalary * 0.005 + 5);
     const siteDays = attendance.filter(a => { const d = new Date(a.date); return a.userId === userId && d.getMonth() === forMonthDate.getMonth() && d.getFullYear() === forMonthDate.getFullYear(); }).length;
     const meal = user.role === 'staff' ? siteDays * 15 : 0;
-    return { month: forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase(), basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: meal, otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance + meal - epf - socso) };
+    return { month: forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase(), basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: meal, epf, socso, netPay: (user.baseSalary + user.fixedAllowance + meal - epf - socso) };
   };
 
   const lastDayOfMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const effectiveCutoff = settings.customSubmissionDate || lastDayOfMonthDate;
   const isCutoffReached = currentDate.getDate() >= effectiveCutoff;
 
-  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans"><Card className="w-full max-w-sm p-8"><div className="flex justify-center mb-6"><UltramapLogo /></div><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold uppercase tracking-widest text-sm">Masuk</button></form></Card></div>;
+  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans"><Card className="w-full max-w-sm p-8 shadow-2xl"><div className="flex justify-center mb-6"><UltramapLogo /></div><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold uppercase tracking-widest text-sm shadow-md">Masuk</button></form></Card></div>;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
         <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm print:hidden">
-            <UltramapLogo /><button onClick={() => signOut(auth)} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold uppercase tracking-widest hover:bg-slate-300 transition-colors">Keluar</button>
+            <UltramapLogo /><button onClick={() => signOut(auth)} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold uppercase tracking-widest hover:bg-slate-300">Keluar</button>
         </nav>
         <main className="max-w-7xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
                 <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 font-bold uppercase tracking-widest text-xs hover:text-slate-800"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
             ) : (
                 <div className="space-y-6">
-                    <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-widest border-b-2 border-blue-600 inline-block">Hi! {currentUser.nickname}!</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-widest border-b-2 border-blue-600 inline-block uppercase">Hi! {currentUser.nickname}!</h1>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
                             <div className="flex justify-between items-start"><p className="text-slate-400 text-xs mb-1 uppercase tracking-widest">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white transition-colors">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
@@ -436,25 +372,13 @@ export default function App() {
                         <div className="space-y-6">
                             {currentUser.role !== 'staff' ? (
                                 <>
-                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-1 flex items-center gap-2 uppercase tracking-widest text-sm"><Settings size={20}/> Tetapan Cutoff</h3><p className="text-[10px] text-slate-400 mb-4 italic uppercase">Biarkan 0 jika ikut tarikh akhir bulan.</p><input type="number" value={settings.customSubmissionDate || ''} onChange={(e) => updateDoc(doc(db, "settings", "global"), { customSubmissionDate: e.target.value ? Number(e.target.value) : null })} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" /></Card>
-                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-2 text-[10px]">Nama</th><th className="p-2 text-[10px]">Basic</th><th className="p-2 text-[10px]">Elaun</th><th className="p-2 text-[10px] text-center">Cuti</th><th className="p-2 text-[10px]">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b font-sans hover:bg-slate-50"><td className="p-2 font-bold uppercase">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td className="p-2">{u.fixedAllowance.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td></tr>))}</tbody></table></Card>
+                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-1 flex items-center gap-2 uppercase tracking-widest text-sm"><Settings size={20}/> Tetapan Cutoff</h3><p className="text-[10px] text-slate-400 mb-4 italic uppercase">Biarkan 0 jika ikut tarikh akhir bulan.</p><input type="number" placeholder="Bulan" value={settings.customSubmissionDate || ''} onChange={(e) => updateDoc(doc(db, "settings", "global"), { customSubmissionDate: e.target.value ? Number(e.target.value) : null })} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" /></Card>
+                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-2 text-[10px]">Nama</th><th className="p-2 text-[10px]">Basic</th><th className="p-2 text-[10px]">Elaun</th><th className="p-2 text-[10px] text-center">Cuti</th><th className="p-2 text-[10px]">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b font-sans hover:bg-slate-50"><td className="p-2 font-bold uppercase">{u.nickname}</td><td className="p-2">{u.baseSalary?.toFixed(2)}</td><td className="p-2">{u.fixedAllowance?.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td></tr>))}</tbody></table></Card>
                                 </>
                             ) : (
                                 <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={(dateStr, userId, type, shouldDelete, remark) => { const existing = attendance.find(a => a.date === dateStr && a.userId === userId); if (shouldDelete && existing) deleteDoc(doc(db, "attendance", existing.id)); else if (existing) updateDoc(doc(db, "attendance", existing.id), { remark }); else addDoc(collection(db, "attendance"), { date: dateStr, userId, type, remark }); }} tsStatus={timesheets.find(t => t.userId === currentUser.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' }} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
                             )}
-                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Permohonan dihantar!");}} className="space-y-3"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/><input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/></div><input name="r" placeholder="Sebab Cuti" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold uppercase text-xs tracking-widest hover:bg-slate-900 transition-colors shadow">Hantar Permohonan</button></form></Card>
-                            <Card className="p-6 shadow-sm">
-                                <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-sm uppercase tracking-widest"><History size={18} /> Sejarah Cuti Saya</h3>
-                                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                                    {leaves.filter(l => l.userId === currentUser.id).sort((a,b) => new Date(b.startDate) - new Date(a.startDate)).map(leave => (
-                                        <div key={leave.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50 transition-all hover:border-blue-200 shadow-sm">
-                                            <div><p className="text-xs font-bold text-slate-700">{leave.startDate} - {leave.endDate}</p><p className="text-[10px] text-slate-500 uppercase">{leave.reason} ({leave.days} Hari)</p>{leave.status === 'Approved' && leave.approvedBy && (<p className="text-[9px] text-emerald-600 font-bold mt-1 uppercase">Approved by {leave.approvedBy}</p>)}</div>
-                                            <div className="flex items-center gap-3"><Badge status={leave.status} />{new Date() <= new Date(leave.endDate) && (<button onClick={async () => { if(confirm("Batal?")) await deleteDoc(doc(db, "leaves", leave.id)); }} className="text-red-400 p-1 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>)}</div>
-                                        </div>
-                                    ))}
-                                    {leaves.filter(l => l.userId === currentUser.id).length === 0 && <p className="text-xs text-slate-400 italic text-center py-4">Tiada rekod cuti.</p>}
-                                </div>
-                            </Card>
+                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Permohonan dihantar!");}} className="space-y-3"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/><input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/></div><input name="r" placeholder="Sebab Cuti" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold uppercase text-xs shadow-md">Hantar Permohonan</button></form></Card>
                         </div>
                         <div className="space-y-6">
                             {currentUser.role !== 'staff' && (
@@ -464,16 +388,15 @@ export default function App() {
                                         return (<Card key={staff.id} className="p-4 shadow-sm"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700 uppercase">{staff.name}</span><Badge status={ts.status} /></div>{showAdminTimesheet === staff.id ? (
                                             <div className="mt-2 space-y-2">
                                                 <TimesheetWidget targetUserId={staff.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={()=>{}} tsStatus={ts} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={true} />
-                                                <div className="flex gap-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-red-500 font-bold py-2 bg-red-50 rounded uppercase hover:bg-red-100 transition-colors">Tutup</button>{ts.status === 'Approved' ? (<button onClick={() => updateTimesheetStatusDB(staff.id, 'Draft')} className="flex-1 text-xs text-white font-bold py-2 bg-orange-500 rounded uppercase shadow-sm hover:bg-orange-600 transition-colors">Buka Semula (Draft)</button>) : (<button disabled={!isCutoffReached} onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')} className={`flex-1 text-xs text-white font-bold py-2 rounded uppercase shadow-sm transition-all ${isCutoffReached ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-300 cursor-not-allowed'}`}>{isCutoffReached ? "Luluskan" : `Lulus (Hanya ${effectiveCutoff}hb)`}</button>)}</div>
+                                                <div className="flex gap-2"><button onClick={() => setShowAdminTimesheet(false)} className="flex-1 text-xs text-red-500 font-bold py-2 bg-red-50 rounded uppercase transition-all">Tutup</button>{ts.status === 'Approved' ? (<button onClick={() => updateTimesheetStatusDB(staff.id, 'Draft')} className="flex-1 text-xs text-white font-bold py-2 bg-orange-500 rounded uppercase shadow-sm">Buka Semula (Draft)</button>) : (<button disabled={!isCutoffReached} onClick={() => updateTimesheetStatusDB(staff.id, 'Approved')} className={`flex-1 text-xs text-white font-bold py-2 rounded uppercase shadow-sm transition-all ${isCutoffReached ? 'bg-emerald-600' : 'bg-slate-300'}`}>{isCutoffReached ? "Luluskan" : `Lulus (Hanya ${effectiveCutoff}hb)`}</button>)}</div>
                                             </div>
-                                        ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold uppercase hover:bg-slate-200 transition-colors">Semak & Luluskan</button>)}</Card>);
+                                        ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold uppercase hover:bg-slate-200">Semak & Luluskan</button>)}</Card>);
                                     })}</div></div>
                                     <Card className="p-6 shadow-sm"><h3 className="font-bold mb-4 uppercase text-sm tracking-widest border-b pb-2">Pengesahan Cuti (Admin)</h3>{leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 hover:border-emerald-200 transition-all"><div className="text-xs uppercase font-bold">{users.find(u=>u.id===leave.userId)?.nickname}: {leave.startDate}</div><button onClick={()=>updateDoc(doc(db, "leaves", leave.id), { status: 'Approved', approvedBy: currentUser.nickname })} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-emerald-700 transition-colors">Lulus</button></div>))}{leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic">Tiada permohonan baru.</p>}<LeaveHistoryViewer users={users} leaves={leaves} /></Card>
                                 </>
                             )}
                         </div>
                     </div>
-                    <div className="print:hidden"><PayslipFolderSystem currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} timesheetStatus={timesheets.find(t => t.userId === currentUser.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' }} currentDate={currentDate} /></div>
                 </div>
             )}
             {editingUser && (
@@ -485,7 +408,7 @@ export default function App() {
                         <div><label className="text-xs font-bold text-slate-400 uppercase">SOCSO Manual</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div>
                     </div>
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
-                    <div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200 transition-colors">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md hover:bg-blue-700 transition-all">Simpan</button></div>
+                    <div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md shadow-blue-200 hover:bg-blue-700">Simpan</button></div>
                 </form></Card></div>
             )}
         </main>
