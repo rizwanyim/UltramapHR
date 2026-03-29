@@ -24,14 +24,6 @@ try {
   console.error("Firebase Init Error:", e);
 }
 
-// Senarai email dikemaskini mengikut rekod Authentication anda (@gmail.com)
-const SEED_USERS = [
-  { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, leaveBalance: 20 },
-  { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, leaveBalance: 18 },
-  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, leaveBalance: 14 },
-  { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, leaveBalance: 12 },
-];
-
 const JOHOR_HOLIDAYS = [
   { date: '2025-07-07', name: 'Awal Muharram' }, 
   { date: '2025-07-27', name: 'Hol Almarhum Sultan Iskandar' }, 
@@ -60,7 +52,6 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
 
-// --- HELPER COMPONENTS ---
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>
     {children}
@@ -90,7 +81,6 @@ const UltramapLogo = ({ className = "h-10" }) => (
   />
 );
 
-// --- HELPER FUNCTIONS ---
 const calculateLeaveDuration = (startDate, endDate) => {
   if (!startDate || !endDate) return 0;
   let count = 0;
@@ -106,7 +96,6 @@ const calculateLeaveDuration = (startDate, endDate) => {
   return count;
 };
 
-// --- PAYSLIP DESIGN ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
@@ -194,7 +183,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   const handleToggle = (day) => {
     const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const holidayInfo = JOHOR_HOLIDAYS.find(h => h.date === dateStr);
-    
     const isCurrentMonthView = swipeIndex === 0;
     const entry = attendance.find(a => a.date === dateStr && a.userId === targetUserId);
 
@@ -207,6 +195,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
     let isLocked = (isPastCutoff && day <= customSubmissionDate) || (tsStatus.status === 'Submitted' || tsStatus.status === 'Approved');
     if (isLocked) { alert("Tarikh ini dikunci."); return; }
     
+    // Alert untuk Cuti Umum
     if (holidayInfo) {
       if (!window.confirm(`Hari ini Cuti Umum (${holidayInfo.name}). Confirm kerja Site?`)) return;
     }
@@ -527,7 +516,7 @@ export default function App() {
                 </div>
             )}
             {editingUser && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
                     <div className="grid grid-cols-2 gap-2">
                         <div><label className="text-xs font-bold text-slate-400 uppercase">KWSP Manual (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
