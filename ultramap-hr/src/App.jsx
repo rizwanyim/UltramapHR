@@ -154,7 +154,9 @@ const PayslipDesign = ({ data, user }) => {
                   <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold tracking-wider text-sm font-sans text-slate-700 uppercase tracking-widest">Deduction (RM)</div>
                   <div className="space-y-2 text-sm font-sans">
                     <div className="flex justify-between"><span>EPF (KWSP)</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>SOCSO (PERKESO)</span><span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span></div>
+                    {user.role === 'staff' && (
+                        <div className="flex justify-between"><span>SOCSO (PERKESO)</span><span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span></div>
+                    )}
                   </div>
                 </div>
                 <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-auto text-slate-600 font-sans uppercase"><span>TOTAL DEDUCTION</span><span>{totalDeductions.toFixed(2)}</span></div>
@@ -358,13 +360,8 @@ const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, 
     );
 };
 
-const LeaveHistoryViewer = ({ users, leaves }) => {
+const LeaveHistoryViewer = ({ users, leaves, getRemainingLeave }) => {
     const [selectedUser, setSelectedUser] = useState(null);
-    const getRemaining = (uid) => {
-        const u = users.find(x => x.id === uid);
-        const approved = leaves.filter(l => l.userId === uid && l.status === 'Approved').reduce((acc, curr) => acc + (curr.days || 0), 0);
-        return (u?.leaveBalance || 14) - approved;
-    };
     return (
         <Card className="mt-4 p-4 bg-slate-50 border border-slate-200">
             <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest"><History size={14}/> Sejarah Cuti Semua Staff</h4>
@@ -373,7 +370,7 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
             </div>
             {selectedUser && (
                 <div className="space-y-2">
-                    <p className="text-[10px] bg-blue-50 text-blue-700 p-2 rounded border border-blue-100 font-bold uppercase tracking-widest mb-2">Baki cuti tinggal {getRemaining(selectedUser)} Hari</p>
+                    <p className="text-[10px] bg-blue-50 text-blue-700 p-2 rounded border border-blue-100 font-bold uppercase tracking-widest mb-2">Baki cuti tinggal {getRemainingLeave(selectedUser)} Hari</p>
                     <div className="max-h-40 overflow-y-auto space-y-2">
                         {leaves.filter(l => l.userId === selectedUser).map((l, idx) => (
                             <div key={idx} className="flex justify-between items-center text-sm border-b pb-1 bg-white p-2 rounded shadow-sm">
@@ -446,15 +443,28 @@ export default function App() {
       else { await addDoc(collection(db, "timesheets"), { userId, month: mStr, status, approvedBy: status === 'Approved' ? currentUser.nickname : null }); }
   };
 
+  // PENGIRAAN CUTI BERGANTUNG PADA TAHUN SEMASA SAHAJA
+  const getRemainingLeave = (uid) => {
+      const u = users.find(x => x.id === uid);
+      const currentYr = new Date().getFullYear();
+      const approvedDaysThisYear = leaves
+          .filter(l => l.userId === uid && l.status === 'Approved' && new Date(l.startDate).getFullYear() === currentYr)
+          .reduce((acc, curr) => acc + (curr.days || 0), 0);
+      return (u?.leaveBalance || 14) - approvedDaysThisYear;
+  };
+
   const calculatePayroll = (userId, forMonthDate = currentDate) => {
     const user = users.find(u => u.id === userId);
     if (!user) return {};
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
     
-    // PENGIRAAN SOCSO & LINDUNG 24 JAM
-    const baseSocso = (user.customSocso && user.customSocso !== 0) ? user.customSocso : ((user.baseSalary * 0.005) + 5);
-    const lindungAmount = user.lindung24JamPercent ? (user.baseSalary * (user.lindung24JamPercent / 100)) : 0;
-    const socso = baseSocso + lindungAmount;
+    // PENGIRAAN SOCSO & LINDUNG 24 JAM (HANYA UNTUK STAFF SAHAJA)
+    let socso = 0;
+    if (user.role === 'staff') {
+        const baseSocso = (user.customSocso && user.customSocso !== 0) ? user.customSocso : ((user.baseSalary * 0.005) + 5);
+        const lindungAmount = user.lindung24JamPercent ? (user.baseSalary * (user.lindung24JamPercent / 100)) : 0;
+        socso = baseSocso + lindungAmount;
+    }
 
     const siteDays = attendance.filter(a => { const d = new Date(a.date); return a.userId === userId && d.getMonth() === forMonthDate.getMonth() && d.getFullYear() === forMonthDate.getFullYear(); }).length;
     const meal = user.role === 'staff' ? siteDays * 15 : 0;
@@ -485,7 +495,10 @@ export default function App() {
                             <h2 className="text-2xl lg:text-3xl font-bold mt-1">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
                             <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 py-1 px-3 rounded text-[10px] font-bold mt-2 uppercase tracking-widest hover:bg-white/30">Slip Gaji</button>
                         </div>
-                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center"><p className="text-slate-500 text-xs mb-1 uppercase tracking-widest">Baki Cuti</p><h2 className="text-3xl font-bold text-slate-800">{(users.find(u=>u.id===currentUser.id)?.leaveBalance || 14) - leaves.filter(l=>l.userId===currentUser.id && l.status==='Approved').reduce((acc,curr)=>acc+(curr.days||0),0)} Hari</h2></div>
+                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center">
+                            <p className="text-slate-500 text-xs mb-1 uppercase tracking-widest">Baki Cuti</p>
+                            <h2 className="text-3xl font-bold text-slate-800">{getRemainingLeave(currentUser.id)} Hari</h2>
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="space-y-6">
@@ -547,7 +560,7 @@ export default function App() {
                                     <Card className="p-6 shadow-sm"><h3 className="font-bold mb-4 uppercase text-sm tracking-widest border-b pb-2">Pengesahan Cuti (Admin)</h3>
                                         {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 hover:border-emerald-200 transition-all"><div className="text-xs"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><button onClick={()=>updateDoc(doc(db, "leaves", leave.id), { status: 'Approved', approvedBy: currentUser.nickname })} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-emerald-700 transition-colors">Lulus</button></div>))}
                                         {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic">Tiada permohonan cuti baru.</p>}
-                                        <LeaveHistoryViewer users={users} leaves={leaves} />
+                                        <LeaveHistoryViewer users={users} leaves={leaves} getRemainingLeave={getRemainingLeave} />
                                     </Card>
                                 </>
                             )}
@@ -559,11 +572,19 @@ export default function App() {
             {editingUser && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, lindung24JamPercent: editingUser.lindung24JamPercent || 0, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
-                    <div className="grid grid-cols-3 gap-2">
+                    
+                    {/* HIDE SOCSO IF SUPER ADMIN / MANAGER */}
+                    <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-3' : 'grid-cols-1'} gap-2`}>
                         <div><label className="text-[10px] font-bold text-slate-400 uppercase">KWSP Manual</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
-                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">SOCSO (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div>
-                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Lindung 24J (%)</label><input type="number" step="0.1" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.lindung24JamPercent || ''} onChange={e=>setEditingUser({...editingUser, lindung24JamPercent: e.target.value ? Number(e.target.value) : null})} /></div>
+                        
+                        {editingUser.role === 'staff' && (
+                            <>
+                                <div><label className="text-[10px] font-bold text-slate-400 uppercase">SOCSO (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div>
+                                <div><label className="text-[10px] font-bold text-slate-400 uppercase">Lindung 24J (%)</label><input type="number" step="0.1" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.lindung24JamPercent || ''} onChange={e=>setEditingUser({...editingUser, lindung24JamPercent: e.target.value ? Number(e.target.value) : null})} /></div>
+                            </>
+                        )}
                     </div>
+
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
                     <div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200 transition-colors">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md shadow-blue-200 hover:bg-blue-700 transition-all">Simpan</button></div>
                 </form></Card></div>
