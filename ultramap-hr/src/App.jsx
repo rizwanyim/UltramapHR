@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "firebase/auth";
-import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
-import { Calendar, DollarSign, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, RefreshCcw, Lock, ArrowRight, User, Info, Download, Users, Database, LogOut, Key, History, FolderOpen, Folder, ShieldCheck, MapPin } from 'lucide-react';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
+import { Calendar, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, Download, History, ShieldCheck } from 'lucide-react';
 
 // --- 1. CONFIG FIREBASE ---
 const firebaseConfig = {
@@ -23,6 +23,15 @@ try {
 } catch (e) {
   console.error("Firebase Init Error:", e);
 }
+
+// Senarai email dikemaskini mengikut rekod Authentication anda (@gmail.com)
+const SEED_USERS = [
+  { email: 'hr.ultramap@gmail.com', name: 'HR Admin', nickname: 'HR', role: 'super_admin', position: 'HR ADMIN', ic: '-', baseSalary: 3000, fixedAllowance: 0, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 14 },
+  { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, lindung24JamPercent: null, leaveBalance: 20 },
+  { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, lindung24JamPercent: null, leaveBalance: 18 },
+  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 14 },
+  { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 12 },
+];
 
 const JOHOR_HOLIDAYS = [
   { date: '2025-07-07', name: 'Awal Muharram' }, 
@@ -52,6 +61,7 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
 
+// --- HELPER COMPONENTS ---
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>
     {children}
@@ -81,6 +91,7 @@ const UltramapLogo = ({ className = "h-10" }) => (
   />
 );
 
+// --- HELPER FUNCTIONS ---
 const calculateLeaveDuration = (startDate, endDate) => {
   if (!startDate || !endDate) return 0;
   let count = 0;
@@ -96,52 +107,51 @@ const calculateLeaveDuration = (startDate, endDate) => {
   return count;
 };
 
-// --- PAYSLIP DESIGN (DIKEMASKINI) ---
+// --- PAYSLIP DESIGN ---
 const PayslipDesign = ({ data, user }) => {
-  // Hanya kira Basic, Allowance, Meal Allowance
-  const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance;
+  const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
   const netPay = totalEarnings - totalDeductions;
-
   return (
     <div className="bg-slate-200 p-4 lg:p-8 flex justify-center overflow-auto min-h-screen print:bg-white print:p-0 print:m-0 print:overflow-hidden">
       <style>{`@media print { @page { size: A4 landscape; margin: 0; } body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; } }`}</style>
       <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:scale-[0.96] print:origin-top-left flex flex-col box-border overflow-hidden">
         <div className="flex-grow pb-[70mm]">
             <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
-              <div><UltramapLogo className="h-20" /></div> 
+              <div><UltramapLogo /></div> 
               <div className="text-right">
-                <p className="font-bold uppercase text-xs mb-1 text-slate-500 font-sans tracking-widest text-right uppercase">Private & Confidential</p>
+                <p className="font-bold text-xs mb-1 text-slate-500 font-sans tracking-widest text-right uppercase">Private & Confidential</p>
                 <h2 className="text-xl font-bold text-slate-800 tracking-wide font-sans text-right uppercase">ULTRAMAP SOLUTION</h2>
-                <p className="text-[10px] text-slate-400 font-sans text-right uppercase tracking-tighter uppercase">Monthly Salary Slip</p>
+                <p className="text-[10px] text-slate-400 font-sans text-right tracking-tighter uppercase">Monthly Salary Slip</p>
               </div>
             </div>
             <div className="flex justify-between mb-8 border-b border-slate-300 pb-6 gap-10">
                 <div className="space-y-3 w-1/2">
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Name</span><span className="uppercase font-semibold truncate">: {user.name}</span></div>
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">I/C No</span><span className="font-semibold font-sans uppercase">: {user.ic}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal uppercase">Name</span><span className="uppercase font-semibold truncate">: {user.name}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal uppercase">I/C No</span><span className="font-semibold font-sans">: {user.ic}</span></div>
                 </div>
                 <div className="space-y-3 w-1/2 pl-8 border-l border-dashed border-slate-200">
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Job Title</span><span className="uppercase font-semibold">: {user.position}</span></div>
-                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-bold uppercase tracking-wider">Payslip For</span><span className="uppercase font-semibold">: {data.month}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal tracking-tight uppercase tracking-wider text-right md:text-left">Job Title</span><span className="uppercase font-semibold">: {user.position}</span></div>
+                    <div className="flex items-center text-sm"><span className="text-slate-500 w-32 font-normal tracking-tight uppercase tracking-wider text-right md:text-left">Payslip For</span><span className="uppercase font-semibold">: {data.month}</span></div>
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-16 mb-4 h-[250px]">
               <div className="flex flex-col justify-between">
                 <div>
-                    <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-widest text-sm font-sans text-slate-700">Earnings (RM)</div>
+                    <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold tracking-wider text-sm font-sans text-slate-700 uppercase tracking-widest">Earnings (RM)</div>
                     <div className="space-y-2 text-sm font-sans">
                       <div className="flex justify-between"><span>BASIC SALARY</span><span className="font-semibold">{data.basicSalary.toFixed(2)}</span></div>
                       <div className="flex justify-between"><span>ALLOWANCE</span><span className="font-semibold">{data.allowance.toFixed(2)}</span></div>
                       <div className="flex justify-between"><span>MEAL ALLOWANCE</span><span className="font-semibold">{data.mealAllowance.toFixed(2)}</span></div>
-                      {/* Baris OT & Bonus Dibuang */}
+                      <div className="flex justify-between text-slate-400 font-medium"><span>OT ALLOWANCE</span><span className="font-semibold">{data.otAllowance.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-slate-400 font-medium"><span>BONUS</span><span className="font-semibold">{data.bonus.toFixed(2)}</span></div>
                     </div>
                 </div>
                 <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-base mt-4 font-sans text-slate-900 uppercase"><span>TOTAL EARNINGS</span><span>{totalEarnings.toFixed(2)}</span></div>
               </div>
               <div className="flex flex-col justify-between pl-8 border-l border-dashed border-slate-200">
                 <div>
-                  <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold uppercase tracking-widest text-sm font-sans text-slate-700">Deduction (RM)</div>
+                  <div className="border-b-2 border-slate-800 pb-2 mb-4 font-bold tracking-wider text-sm font-sans text-slate-700 uppercase tracking-widest">Deduction (RM)</div>
                   <div className="space-y-2 text-sm font-sans">
                     <div className="flex justify-between"><span>EPF (KWSP)</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
                     <div className="flex justify-between"><span>SOCSO (PERKESO)</span><span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span></div>
@@ -151,7 +161,7 @@ const PayslipDesign = ({ data, user }) => {
               </div>
             </div>
             <div className="bg-slate-100 border-y-4 border-slate-800 py-5 px-8 flex justify-between items-center mt-4">
-              <span className="font-bold text-lg uppercase tracking-widest text-slate-700 font-sans tracking-tight">NET PAY</span>
+              <span className="font-bold text-lg tracking-widest text-slate-700 font-sans tracking-tight uppercase">NET PAY</span>
               <span className="font-bold text-2xl text-slate-900 font-sans tracking-tight">RM {netPay.toFixed(2)}</span>
             </div>
         </div>
@@ -167,7 +177,6 @@ const PayslipDesign = ({ data, user }) => {
   );
 };
 
-// --- TIMESHEET WIDGET ---
 const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, attendance, setAttendance, tsStatus, updateTimesheetStatus, isAdminView }) => {
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false);
@@ -186,6 +195,7 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   const handleToggle = (day) => {
     const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const holidayInfo = JOHOR_HOLIDAYS.find(h => h.date === dateStr);
+    
     const isCurrentMonthView = swipeIndex === 0;
     const entry = attendance.find(a => a.date === dateStr && a.userId === targetUserId);
 
@@ -309,7 +319,6 @@ const TimesheetWidget = ({ targetUserId, currentDate, customSubmissionDate, atte
   );
 };
 
-// --- PAYSLIP ARCHIVE FOLDER ---
 const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, timesheetStatus, currentDate }) => {
     const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear()); 
     const getAvailableMonths = (year) => {
@@ -349,7 +358,6 @@ const PayslipFolderSystem = ({ currentUser, calculatePayroll, setViewedPayslip, 
     );
 };
 
-// --- LEAVE HISTORY VIEWER ---
 const LeaveHistoryViewer = ({ users, leaves }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const getRemaining = (uid) => {
@@ -380,7 +388,6 @@ const LeaveHistoryViewer = ({ users, leaves }) => {
     );
 };
 
-// --- MAIN APP ---
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -395,8 +402,7 @@ export default function App() {
   const [hideSalary, setHideSalary] = useState(false);
   const [showAdminTimesheet, setShowAdminTimesheet] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [newPasswordData, setNewPasswordData] = useState({ new: '', confirm: '' });
+  const [tempCutoff, setTempCutoff] = useState('');
 
   useEffect(() => {
     if (!auth) return;
@@ -409,12 +415,29 @@ export default function App() {
         onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
       } else setCurrentUser(null);
     });
-    onSnapshot(doc(db, "settings", "global"), (s) => { if(s.exists()) setSettings(s.data()); });
+    onSnapshot(doc(db, "settings", "global"), (s) => { 
+        if(s.exists()) {
+            setSettings(s.data()); 
+            setTempCutoff(s.data().customSubmissionDate || '');
+        } 
+    });
     return () => unsubscribeAuth();
   }, []);
 
   const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Gagal Log Masuk!"); } };
   
+  const handleSaveCutoff = async () => {
+    try {
+        await setDoc(doc(db, "settings", "global"), { 
+            customSubmissionDate: tempCutoff ? Number(tempCutoff) : null 
+        }, { merge: true });
+        alert("Tetapan Cutoff berjaya disimpan!");
+    } catch (err) {
+        console.error(err);
+        alert("Ralat semasa menyimpan Tetapan Cutoff");
+    }
+  };
+
   const updateTimesheetStatusDB = async (userId, status) => {
       const today = new Date();
       const mStr = (today.getDate() <= 5 ? new Date(today.getFullYear(), today.getMonth() - 1, 1) : today).toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
@@ -427,9 +450,15 @@ export default function App() {
     const user = users.find(u => u.id === userId);
     if (!user) return {};
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
-    const socso = (user.customSocso !== null && user.customSocso !== undefined) ? user.customSocso : (user.baseSalary * 0.005 + 5);
+    
+    // PENGIRAAN SOCSO & LINDUNG 24 JAM
+    const baseSocso = (user.customSocso && user.customSocso !== 0) ? user.customSocso : ((user.baseSalary * 0.005) + 5);
+    const lindungAmount = user.lindung24JamPercent ? (user.baseSalary * (user.lindung24JamPercent / 100)) : 0;
+    const socso = baseSocso + lindungAmount;
+
     const siteDays = attendance.filter(a => { const d = new Date(a.date); return a.userId === userId && d.getMonth() === forMonthDate.getMonth() && d.getFullYear() === forMonthDate.getFullYear(); }).length;
     const meal = user.role === 'staff' ? siteDays * 15 : 0;
+    
     return { month: forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase(), basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: meal, otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance + meal - epf - socso) };
   };
 
@@ -452,7 +481,7 @@ export default function App() {
                     <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-widest border-b-2 border-blue-600 inline-block">Hi! {currentUser.nickname}!</h1>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
-                            <p className="text-slate-400 text-xs mb-1 uppercase tracking-widest">Anggaran Gaji</p>
+                            <div className="flex justify-between items-start"><p className="text-slate-400 text-xs mb-1 uppercase tracking-widest">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white transition-colors">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
                             <h2 className="text-2xl lg:text-3xl font-bold mt-1">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
                             <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 py-1 px-3 rounded text-[10px] font-bold mt-2 uppercase tracking-widest hover:bg-white/30">Slip Gaji</button>
                         </div>
@@ -462,7 +491,14 @@ export default function App() {
                         <div className="space-y-6">
                             {currentUser.role !== 'staff' ? (
                                 <>
-                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Settings size={20}/> Tetapan Cutoff</h3><input type="number" placeholder="Hujung Bulan" value={settings.customSubmissionDate || ''} onChange={(e) => updateDoc(doc(db, "settings", "global"), { customSubmissionDate: e.target.value ? Number(e.target.value) : null })} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" /></Card>
+                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm">
+                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Settings size={20}/> Tetapan Cutoff</h3>
+                                        <div className="flex items-center gap-3">
+                                            <input type="number" placeholder="Hujung Bulan" value={tempCutoff} onChange={(e) => setTempCutoff(e.target.value)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" />
+                                            <span className="text-xs font-bold text-slate-500 uppercase">hb</span>
+                                            <button onClick={handleSaveCutoff} className="ml-auto bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-colors shadow">Simpan</button>
+                                        </div>
+                                    </Card>
                                     <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-2 text-[10px]">Nama</th><th className="p-2 text-[10px]">Basic</th><th className="p-2 text-[10px]">Elaun</th><th className="p-2 text-[10px] text-center">Cuti</th><th className="p-2 text-[10px]">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b font-sans hover:bg-slate-50"><td className="p-2 font-bold uppercase">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td className="p-2">{u.fixedAllowance.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td></tr>))}</tbody></table></Card>
                                 </>
                             ) : (
@@ -521,11 +557,12 @@ export default function App() {
                 </div>
             )}
             {editingUser && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, lindung24JamPercent: editingUser.lindung24JamPercent || 0, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
-                    <div className="grid grid-cols-2 gap-2">
-                        <div><label className="text-xs font-bold text-slate-400 uppercase">KWSP Manual (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
-                        <div><label className="text-xs font-bold text-slate-400 uppercase">SOCSO Manual (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">KWSP Manual</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
+                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">SOCSO (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div>
+                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Lindung 24J (%)</label><input type="number" step="0.1" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.lindung24JamPercent || ''} onChange={e=>setEditingUser({...editingUser, lindung24JamPercent: e.target.value ? Number(e.target.value) : null})} /></div>
                     </div>
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
                     <div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200 transition-colors">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md shadow-blue-200 hover:bg-blue-700 transition-all">Simpan</button></div>
