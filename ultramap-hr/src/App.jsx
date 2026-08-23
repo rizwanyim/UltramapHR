@@ -39,7 +39,6 @@ const JOHOR_HOLIDAYS = [
   { date: '2025-07-28', name: 'Cuti Ganti (Hol Johor)' }, 
   { date: '2025-08-31', name: 'Hari Kebangsaan' },
   { date: '2025-12-25', name: 'Hari Krismas' },
-  { date: '2026-02-01', name: 'Hari Thaipusam' },
   { date: '2026-02-02', name: 'Cuti Hari Thaipusam' },
   { date: '2026-02-17', name: 'Tahun Baru Cina' },
   { date: '2026-02-18', name: 'Tahun Baru Cina Hari Kedua' },
@@ -59,6 +58,20 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-11-08', name: 'Hari Deepavali' },
   { date: '2026-11-09', name: 'Cuti Hari Deepavali' },
   { date: '2026-12-25', name: 'Hari Krismas' },
+  { date: '2027-01-22', name: 'Hari Thaipusam' },
+  { date: '2027-02-06', name: 'Tahun Baru Cina' },
+  { date: '2027-02-07', name: 'Tahun Baru Cina Hari Kedua' },
+  { date: '2027-02-08', name: 'Tahun Baru Cina Hari Ketiga' },
+  { date: '2027-02-09', name: 'Awal Ramadan' },
+  { date: '2027-03-09', name: 'Hari Raya Aidilfitri' },
+  { date: '2027-03-10', name: 'Hari Raya Aidilfitri Hari Kedua' },
+  { date: '2026-03-23', name: 'Hari Keputeraan Sultan Johor' },
+  { date: '2027-05-01', name: 'Hari Pekerja' },
+  { date: '2027-05-16', name: 'Hari Raya Haji' },
+  { date: '2027-05-20', name: 'Hari Wesak' },
+  { date: '2027-06-06', name: 'Awal Muharram' },
+  { date: '2027-06-07', name: 'Hari Keputeraan YDP Agong' },
+  { date: '2026-07-21', name: 'Hari Hol Almarhum Sultan Iskandar' },
 ];
 
 // --- HELPER COMPONENTS ---
