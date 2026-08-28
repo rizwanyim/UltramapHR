@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
 import { Calendar, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, Download, History, ShieldCheck } from 'lucide-react';
 
 // --- 1. CONFIG FIREBASE ---
@@ -26,7 +26,7 @@ try {
 
 // Senarai email dikemaskini mengikut rekod Authentication anda (@gmail.com)
 const SEED_USERS = [
-  { email: 'hr.ultramap@gmail.com', name: 'HR Admin', nickname: 'HR', role: 'super_admin', position: 'HR ADMIN', ic: '880112-22-8959', baseSalary: 3000, fixedAllowance: 0, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 14 },
+  { email: 'hr.ultramap@gmail.com', name: 'HR Admin', nickname: 'HR', role: 'super_admin', position: 'HR ADMIN', ic: '-', baseSalary: 3000, fixedAllowance: 0, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 14 },
   { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, lindung24JamPercent: null, leaveBalance: 20 },
   { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, lindung24JamPercent: null, leaveBalance: 18 },
   { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 14 },
@@ -39,6 +39,7 @@ const JOHOR_HOLIDAYS = [
   { date: '2025-07-28', name: 'Cuti Ganti (Hol Johor)' }, 
   { date: '2025-08-31', name: 'Hari Kebangsaan' },
   { date: '2025-12-25', name: 'Hari Krismas' },
+  { date: '2026-02-01', name: 'Hari Thaipusam' },
   { date: '2026-02-02', name: 'Cuti Hari Thaipusam' },
   { date: '2026-02-17', name: 'Tahun Baru Cina' },
   { date: '2026-02-18', name: 'Tahun Baru Cina Hari Kedua' },
@@ -58,20 +59,6 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-11-08', name: 'Hari Deepavali' },
   { date: '2026-11-09', name: 'Cuti Hari Deepavali' },
   { date: '2026-12-25', name: 'Hari Krismas' },
-  { date: '2027-01-22', name: 'Hari Thaipusam' },
-  { date: '2027-02-06', name: 'Tahun Baru Cina' },
-  { date: '2027-02-07', name: 'Tahun Baru Cina Hari Kedua' },
-  { date: '2027-02-08', name: 'Tahun Baru Cina Hari Ketiga' },
-  { date: '2027-02-09', name: 'Awal Ramadan' },
-  { date: '2027-03-09', name: 'Hari Raya Aidilfitri' },
-  { date: '2027-03-10', name: 'Hari Raya Aidilfitri Hari Kedua' },
-  { date: '2026-03-23', name: 'Hari Keputeraan Sultan Johor' },
-  { date: '2027-05-01', name: 'Hari Pekerja' },
-  { date: '2027-05-16', name: 'Hari Raya Haji' },
-  { date: '2027-05-20', name: 'Hari Wesak' },
-  { date: '2027-06-06', name: 'Awal Muharram' },
-  { date: '2027-06-07', name: 'Hari Keputeraan YDP Agong' },
-  { date: '2026-07-21', name: 'Hari Hol Almarhum Sultan Iskandar' },
 ];
 
 // --- HELPER COMPONENTS ---
@@ -104,7 +91,6 @@ const UltramapLogo = ({ className = "h-10" }) => (
   />
 );
 
-// --- HELPER FUNCTIONS ---
 const calculateLeaveDuration = (startDate, endDate) => {
   if (!startDate || !endDate) return 0;
   let count = 0;
@@ -120,7 +106,6 @@ const calculateLeaveDuration = (startDate, endDate) => {
   return count;
 };
 
-// --- PAYSLIP DESIGN ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
@@ -415,26 +400,62 @@ export default function App() {
   const [tempCutoff, setTempCutoff] = useState('');
 
   useEffect(() => {
-    if (!auth) return;
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    if (!auth || !db) return;
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        onSnapshot(query(collection(db, "users"), where("email", "==", user.email)), (s) => { if (!s.empty) setCurrentUser({ ...s.docs[0].data(), id: s.docs[0].id }); });
-        onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
-        onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
-        onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
-        onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
-      } else setCurrentUser(null);
+        const userQuery = query(collection(db, "users"), where("email", "==", user.email));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (userSnapshot.empty) {
+          const seedMatch = SEED_USERS.find(su => su.email === user.email);
+          if (seedMatch) {
+            const docRef = await addDoc(collection(db, "users"), seedMatch);
+            setCurrentUser({ ...seedMatch, id: docRef.id });
+          } else {
+            alert("Akaun wujud dalam Auth tetapi tiada profil dalam Firestore.");
+          }
+        } else {
+          setCurrentUser({ ...userSnapshot.docs[0].data(), id: userSnapshot.docs[0].id });
+        }
+      } else {
+        setCurrentUser(null);
+      }
     });
+
+    const initSeedUsers = async () => {
+      const allUsersSnap = await getDocs(collection(db, "users"));
+      if (allUsersSnap.empty) {
+        for (const su of SEED_USERS) {
+          await addDoc(collection(db, "users"), su);
+        }
+      }
+    };
+    initSeedUsers();
+
+    onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
+    onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
+    onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
+    onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
+    
     onSnapshot(doc(db, "settings", "global"), (s) => { 
         if(s.exists()) {
             setSettings(s.data()); 
             setTempCutoff(s.data().customSubmissionDate || '');
         } 
     });
+
     return () => unsubscribeAuth();
   }, []);
 
-  const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Gagal Log Masuk!"); } };
+  const handleLogin = async (e) => { 
+    e.preventDefault(); 
+    try { 
+      await signInWithEmailAndPassword(auth, email, password); 
+    } catch (err) { 
+      console.error("Login Error:", err);
+      alert(`Gagal Log Masuk: ${err.message}`); 
+    } 
+  };
   
   const handleSaveCutoff = async () => {
     try {
@@ -456,7 +477,6 @@ export default function App() {
       else { await addDoc(collection(db, "timesheets"), { userId, month: mStr, status, approvedBy: status === 'Approved' ? currentUser.nickname : null }); }
   };
 
-  // PENGIRAAN CUTI BERGANTUNG PADA TAHUN SEMASA SAHAJA
   const getRemainingLeave = (uid) => {
       const u = users.find(x => x.id === uid);
       const currentYr = new Date().getFullYear();
@@ -471,11 +491,14 @@ export default function App() {
     if (!user) return {};
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
     
-    // PENGIRAAN SOCSO & LINDUNG 24 JAM (HANYA UNTUK STAFF SAHAJA)
     let socso = 0;
     if (user.role === 'staff') {
         const baseSocso = (user.customSocso && user.customSocso !== 0) ? user.customSocso : ((user.baseSalary * 0.005) + 5);
-        const lindungAmount = user.lindung24JamPercent ? (user.baseSalary * (user.lindung24JamPercent / 100)) : 0;
+        
+        // Lindung 24 Jam hanya dikira bermula 1 Ogos 2026 dan ke atas
+        const isAfterAug2026 = (forMonthDate.getFullYear() > 2026) || (forMonthDate.getFullYear() === 2026 && forMonthDate.getMonth() >= 7);
+        const lindungAmount = (isAfterAug2026 && user.lindung24JamPercent) ? (user.baseSalary * (user.lindung24JamPercent / 100)) : 0;
+        
         socso = baseSocso + lindungAmount;
     }
 
@@ -489,7 +512,24 @@ export default function App() {
   const effectiveCutoff = settings.customSubmissionDate || lastDayOfMonthDate;
   const isCutoffReached = currentDate.getDate() >= effectiveCutoff;
 
-  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans"><Card className="w-full max-w-sm p-8"><div className="flex justify-center mb-6"><UltramapLogo /></div><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold uppercase tracking-widest text-sm">Masuk</button></form></Card></div>;
+  if (!currentUser) return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
+      <Card className="w-full max-w-sm p-8">
+        <div className="flex justify-center mb-6"><UltramapLogo /></div>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded outline-none" required />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded outline-none" required />
+          </div>
+          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold uppercase tracking-widest text-sm hover:bg-blue-700 transition-colors">Masuk</button>
+        </form>
+      </Card>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
@@ -586,7 +626,6 @@ export default function App() {
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, lindung24JamPercent: editingUser.lindung24JamPercent || 0, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
                     <div><label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
                     
-                    {/* HIDE SOCSO IF SUPER ADMIN / MANAGER */}
                     <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-3' : 'grid-cols-1'} gap-2`}>
                         <div><label className="text-[10px] font-bold text-slate-400 uppercase">KWSP Manual</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
                         
