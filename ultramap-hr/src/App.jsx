@@ -25,11 +25,11 @@ try {
 }
 
 const SEED_USERS = [
-  { email: 'hr.ultramap@gmail.com', name: 'HR Admin', nickname: 'HR', role: 'super_admin', position: 'HR ADMIN', ic: '-', baseSalary: 3000, fixedAllowance: 0, customEpf: null, customSocso: null, lindung24Jam: 0, leaveBalance: 14 },
-  { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, lindung24Jam: 0, leaveBalance: 20 },
-  { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, lindung24Jam: 0, leaveBalance: 18 },
-  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, lindung24Jam: 0, leaveBalance: 14 },
-  { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, lindung24Jam: 0, leaveBalance: 12 },
+  { email: 'hr.ultramap@gmail.com', name: 'HR Admin', nickname: 'HR', role: 'super_admin', position: 'HR ADMIN', ic: '-', baseSalary: 3000, fixedAllowance: 0, customEpf: null, customSocso: null, lindung24JamMap: {}, leaveBalance: 14 },
+  { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, lindung24JamMap: {}, leaveBalance: 20 },
+  { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, lindung24JamMap: {}, leaveBalance: 18 },
+  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, lindung24JamMap: {}, leaveBalance: 14 },
+  { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, lindung24JamMap: {}, leaveBalance: 12 },
 ];
 
 const JOHOR_HOLIDAYS = [
@@ -59,6 +59,21 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-11-09', name: 'Cuti Hari Deepavali' },
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
+
+// Senarai bulan bermula Ogos 2026 hingga bulan semasa (atau tahun hadapan)
+const getLindungMonthOptions = () => {
+  const options = [];
+  const start = new Date(2026, 7, 1); // Ogos 2026
+  const end = new Date(new Date().getFullYear() + 1, 11, 1); // Sehingga Disember tahun depan
+  let curr = new Date(start);
+  while (curr <= end) {
+    const key = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}`;
+    const label = curr.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase();
+    options.push({ key, label });
+    curr.setMonth(curr.getMonth() + 1);
+  }
+  return options;
+};
 
 // --- HELPER COMPONENTS ---
 const Card = ({ children, className = "" }) => (
@@ -396,7 +411,14 @@ export default function App() {
   const [hideSalary, setHideSalary] = useState(false);
   const [showAdminTimesheet, setShowAdminTimesheet] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [selectedLindungMonth, setSelectedLindungMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [tempCutoff, setTempCutoff] = useState('');
+
+  const lindungMonthOptions = getLindungMonthOptions();
+  const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
   useEffect(() => {
     if (!auth || !db) return;
@@ -494,9 +516,18 @@ export default function App() {
     if (user.role === 'staff') {
         const baseSocso = (user.customSocso && user.customSocso !== 0) ? user.customSocso : ((user.baseSalary * 0.005) + 5);
         
-        // Lindung 24 Jam (RM manual) dikira bermula 1 Ogos 2026 (month index >= 7) dan ke atas
+        // Dapatkan nilai Lindung 24 Jam mengikut bulan slip gaji (Ogos 2026 dan ke atas)
+        const monthKey = `${forMonthDate.getFullYear()}-${String(forMonthDate.getMonth() + 1).padStart(2, '0')}`;
         const isAfterAug2026 = (forMonthDate.getFullYear() > 2026) || (forMonthDate.getFullYear() === 2026 && forMonthDate.getMonth() >= 7);
-        const lindungAmount = isAfterAug2026 ? (Number(user.lindung24Jam) || 0) : 0;
+        
+        let lindungAmount = 0;
+        if (isAfterAug2026) {
+            if (user.lindung24JamMap && user.lindung24JamMap[monthKey] !== undefined) {
+                lindungAmount = Number(user.lindung24JamMap[monthKey]) || 0;
+            } else {
+                lindungAmount = Number(user.lindung24Jam) || 0;
+            }
+        }
         
         socso = baseSocso + lindungAmount;
     }
@@ -505,6 +536,23 @@ export default function App() {
     const meal = user.role === 'staff' ? siteDays * 15 : 0;
     
     return { month: forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase(), basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: meal, otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance + meal - epf - socso) };
+  };
+
+  const openEditModal = (userObj) => {
+    const now = new Date();
+    const defaultKey = (now.getFullYear() > 2026 || (now.getFullYear() === 2026 && now.getMonth() >= 7))
+      ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+      : '2026-08';
+
+    const existingMap = userObj.lindung24JamMap || {};
+    const initialVal = existingMap[defaultKey] !== undefined ? existingMap[defaultKey] : (userObj.lindung24Jam || 0);
+
+    setSelectedLindungMonth(defaultKey);
+    setEditingUser({
+      ...userObj,
+      lindung24JamMap: existingMap,
+      currentLindungInput: initialVal
+    });
   };
 
   const lastDayOfMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
@@ -572,22 +620,27 @@ export default function App() {
                                                     <th className="p-2 text-[10px]">Nama</th>
                                                     <th className="p-2 text-[10px]">Basic</th>
                                                     <th className="p-2 text-[10px]">Elaun</th>
-                                                    <th className="p-2 text-[10px]">Lindung 24J (RM)</th>
+                                                    <th className="p-2 text-[10px]">Lindung 24J (Bulan Ini)</th>
                                                     <th className="p-2 text-[10px] text-center">Cuti</th>
                                                     <th className="p-2 text-[10px]">Edit</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {users.map(u => (
-                                                    <tr key={u.id} className="border-b font-sans hover:bg-slate-50">
-                                                        <td className="p-2 font-bold uppercase">{u.nickname}</td>
-                                                        <td className="p-2">{u.baseSalary.toFixed(2)}</td>
-                                                        <td className="p-2">{u.fixedAllowance.toFixed(2)}</td>
-                                                        <td className="p-2 text-blue-600 font-semibold">{u.role === 'staff' ? (Number(u.lindung24Jam || 0)).toFixed(2) : '-'}</td>
-                                                        <td className="p-2 text-center">{u.leaveBalance}</td>
-                                                        <td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td>
-                                                    </tr>
-                                                ))}
+                                                {users.map(u => {
+                                                    const currVal = (u.lindung24JamMap && u.lindung24JamMap[currentMonthKey] !== undefined) 
+                                                      ? u.lindung24JamMap[currentMonthKey] 
+                                                      : (u.lindung24Jam || 0);
+                                                    return (
+                                                      <tr key={u.id} className="border-b font-sans hover:bg-slate-50">
+                                                          <td className="p-2 font-bold uppercase">{u.nickname}</td>
+                                                          <td className="p-2">{u.baseSalary.toFixed(2)}</td>
+                                                          <td className="p-2">{u.fixedAllowance.toFixed(2)}</td>
+                                                          <td className="p-2 text-blue-600 font-semibold">{u.role === 'staff' ? Number(currVal).toFixed(2) : '-'}</td>
+                                                          <td className="p-2 text-center">{u.leaveBalance}</td>
+                                                          <td><button onClick={() => openEditModal(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td>
+                                                      </tr>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </Card>
@@ -653,16 +706,20 @@ export default function App() {
                         <h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3>
                         <form onSubmit={async (e)=>{
                             e.preventDefault(); 
+                            const updatedMap = {
+                              ...(editingUser.lindung24JamMap || {}),
+                              [selectedLindungMonth]: editingUser.currentLindungInput ? Number(editingUser.currentLindungInput) : 0
+                            };
                             await updateDoc(doc(db, "users", editingUser.id), { 
                                 baseSalary: editingUser.baseSalary, 
                                 fixedAllowance: editingUser.fixedAllowance, 
                                 customEpf: editingUser.customEpf, 
                                 customSocso: editingUser.customSocso, 
-                                lindung24Jam: editingUser.lindung24Jam ? Number(editingUser.lindung24Jam) : 0, 
+                                lindung24JamMap: updatedMap, 
                                 leaveBalance: editingUser.leaveBalance 
                             }); 
                             setEditingUser(null); 
-                            alert("Berjaya disimpan!");
+                            alert(`Berjaya disimpan untuk ${selectedLindungMonth}!`);
                         }} className="space-y-4">
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
@@ -675,7 +732,7 @@ export default function App() {
                                 </div>
                             </div>
                             
-                            <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-3' : 'grid-cols-1'} gap-2`}>
+                            <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-3' : 'grid-cols-1'} gap-2 items-start`}>
                                 <div>
                                     <label className="text-[10px] font-bold text-slate-400 uppercase">KWSP Manual</label>
                                     <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} />
@@ -687,9 +744,42 @@ export default function App() {
                                             <label className="text-[10px] font-bold text-slate-400 uppercase">SOCSO (RM)</label>
                                             <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} />
                                         </div>
-                                        <div>
+                                        <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-blue-600 uppercase">Lindung 24J (RM)</label>
-                                            <input type="number" step="0.01" placeholder="0.00" className="w-full border border-blue-200 bg-blue-50/30 p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.lindung24Jam || ''} onChange={e=>setEditingUser({...editingUser, lindung24Jam: e.target.value ? Number(e.target.value) : 0})} />
+                                            <input 
+                                                type="number" 
+                                                step="0.01" 
+                                                placeholder="0.00" 
+                                                className="w-full border border-blue-200 bg-blue-50/30 p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold text-blue-800" 
+                                                value={editingUser.currentLindungInput === 0 ? '' : editingUser.currentLindungInput} 
+                                                onChange={e => setEditingUser({
+                                                  ...editingUser, 
+                                                  currentLindungInput: e.target.value,
+                                                  lindung24JamMap: {
+                                                    ...(editingUser.lindung24JamMap || {}),
+                                                    [selectedLindungMonth]: e.target.value ? Number(e.target.value) : 0
+                                                  }
+                                                })} 
+                                            />
+                                            <select 
+                                                value={selectedLindungMonth} 
+                                                onChange={(e) => {
+                                                  const newKey = e.target.value;
+                                                  const savedVal = (editingUser.lindung24JamMap && editingUser.lindung24JamMap[newKey] !== undefined) 
+                                                    ? editingUser.lindung24JamMap[newKey] 
+                                                    : 0;
+                                                  setSelectedLindungMonth(newKey);
+                                                  setEditingUser({
+                                                    ...editingUser,
+                                                    currentLindungInput: savedVal
+                                                  });
+                                                }}
+                                                className="w-full border border-blue-200 bg-white p-1.5 rounded text-[11px] font-bold text-slate-700 uppercase outline-none focus:border-blue-500 cursor-pointer"
+                                            >
+                                                {lindungMonthOptions.map(opt => (
+                                                    <option key={opt.key} value={opt.key}>{opt.label}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                     </>
                                 )}
