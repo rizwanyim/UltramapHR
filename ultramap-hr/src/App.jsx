@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
-import { Calendar, FileText, CheckCircle, XCircle, Menu, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Save, Bell, AlertCircle, Trash2, Settings, Download, History, ShieldCheck } from 'lucide-react';
+import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
+import { Calendar, FileText, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Trash2, Settings, Download, History, ShieldCheck } from 'lucide-react';
 
 // --- 1. CONFIG FIREBASE ---
 const firebaseConfig = {
@@ -24,13 +24,12 @@ try {
   console.error("Firebase Init Error:", e);
 }
 
-// Senarai email dikemaskini mengikut rekod Authentication anda (@gmail.com)
 const SEED_USERS = [
-  { email: 'hr.ultramap@gmail.com', name: 'HR Admin', nickname: 'HR', role: 'super_admin', position: 'HR ADMIN', ic: '-', baseSalary: 3000, fixedAllowance: 0, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 14 },
-  { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, lindung24JamPercent: null, leaveBalance: 20 },
-  { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, lindung24JamPercent: null, leaveBalance: 18 },
-  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 14 },
-  { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, lindung24JamPercent: null, leaveBalance: 12 },
+  { email: 'hr.ultramap@gmail.com', name: 'HR Admin', nickname: 'HR', role: 'super_admin', position: 'HR ADMIN', ic: '-', baseSalary: 3000, fixedAllowance: 0, customEpf: null, customSocso: null, lindung24Jam: 0, leaveBalance: 14 },
+  { email: 'hafiz.ultramap@gmail.com', name: 'Mohd Hafiz Bin Mohd Tahir', nickname: 'Hafiz', role: 'super_admin', position: 'SUPER ADMIN', ic: '900405-01-5651', baseSalary: 5000, fixedAllowance: 500, customEpf: 550, customSocso: 19.25, lindung24Jam: 0, leaveBalance: 20 },
+  { email: 'syazwan.ultramap@gmail.com', name: 'Ahmad Syazwan Bin Zahari', nickname: 'Syazwan', role: 'manager', position: 'PROJECT MANAGER', ic: '920426-03-6249', baseSalary: 4000, fixedAllowance: 300, customEpf: 440, customSocso: 19.25, lindung24Jam: 0, leaveBalance: 18 },
+  { email: 'noorizwan.ultramap@gmail.com', name: 'Mohd Noorizwan Bin Md Yim', nickname: 'M. Noorizwan', role: 'staff', position: 'OPERATION', ic: '880112-23-5807', baseSalary: 2300, fixedAllowance: 200, customEpf: null, customSocso: null, lindung24Jam: 0, leaveBalance: 14 },
+  { email: 'taufiq.ultramap@gmail.com', name: 'Muhammad Taufiq Bin Rosli', nickname: 'Taufiq', role: 'staff', position: 'OPERATION', ic: '990807-01-6157', baseSalary: 1800, fixedAllowance: 150, customEpf: null, customSocso: null, lindung24Jam: 0, leaveBalance: 12 },
 ];
 
 const JOHOR_HOLIDAYS = [
@@ -91,7 +90,6 @@ const UltramapLogo = ({ className = "h-10" }) => (
   />
 );
 
-// --- HELPER FUNCTIONS ---
 const calculateLeaveDuration = (startDate, endDate) => {
   if (!startDate || !endDate) return 0;
   let count = 0;
@@ -107,7 +105,6 @@ const calculateLeaveDuration = (startDate, endDate) => {
   return count;
 };
 
-// --- PAYSLIP DESIGN ---
 const PayslipDesign = ({ data, user }) => {
   const totalEarnings = data.basicSalary + data.allowance + data.mealAllowance + data.otAllowance + data.bonus;
   const totalDeductions = data.epf + data.socso;
@@ -402,26 +399,62 @@ export default function App() {
   const [tempCutoff, setTempCutoff] = useState('');
 
   useEffect(() => {
-    if (!auth) return;
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    if (!auth || !db) return;
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        onSnapshot(query(collection(db, "users"), where("email", "==", user.email)), (s) => { if (!s.empty) setCurrentUser({ ...s.docs[0].data(), id: s.docs[0].id }); });
-        onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
-        onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
-        onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
-        onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
-      } else setCurrentUser(null);
+        const userQuery = query(collection(db, "users"), where("email", "==", user.email));
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (userSnapshot.empty) {
+          const seedMatch = SEED_USERS.find(su => su.email === user.email);
+          if (seedMatch) {
+            const docRef = await addDoc(collection(db, "users"), seedMatch);
+            setCurrentUser({ ...seedMatch, id: docRef.id });
+          } else {
+            alert("Akaun wujud dalam Auth tetapi tiada profil dalam Firestore.");
+          }
+        } else {
+          setCurrentUser({ ...userSnapshot.docs[0].data(), id: userSnapshot.docs[0].id });
+        }
+      } else {
+        setCurrentUser(null);
+      }
     });
+
+    const initSeedUsers = async () => {
+      const allUsersSnap = await getDocs(collection(db, "users"));
+      if (allUsersSnap.empty) {
+        for (const su of SEED_USERS) {
+          await addDoc(collection(db, "users"), su);
+        }
+      }
+    };
+    initSeedUsers();
+
+    onSnapshot(collection(db, "users"), (s) => setUsers(s.docs.map(d => ({...d.data(), id: d.id}))));
+    onSnapshot(collection(db, "attendance"), (s) => setAttendance(s.docs.map(d => ({...d.data(), id: d.id}))));
+    onSnapshot(collection(db, "leaves"), (s) => setLeaves(s.docs.map(d => ({...d.data(), id: d.id}))));
+    onSnapshot(collection(db, "timesheets"), (s) => setTimesheets(s.docs.map(d => ({...d.data(), id: d.id}))));
+    
     onSnapshot(doc(db, "settings", "global"), (s) => { 
         if(s.exists()) {
             setSettings(s.data()); 
             setTempCutoff(s.data().customSubmissionDate || '');
         } 
     });
+
     return () => unsubscribeAuth();
   }, []);
 
-  const handleLogin = async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, email, password); } catch (err) { alert("Gagal Log Masuk!"); } };
+  const handleLogin = async (e) => { 
+    e.preventDefault(); 
+    try { 
+      await signInWithEmailAndPassword(auth, email, password); 
+    } catch (err) { 
+      console.error("Login Error:", err);
+      alert(`Gagal Log Masuk: ${err.message}`); 
+    } 
+  };
   
   const handleSaveCutoff = async () => {
     try {
@@ -443,7 +476,6 @@ export default function App() {
       else { await addDoc(collection(db, "timesheets"), { userId, month: mStr, status, approvedBy: status === 'Approved' ? currentUser.nickname : null }); }
   };
 
-  // PENGIRAAN CUTI BERGANTUNG PADA TAHUN SEMASA SAHAJA
   const getRemainingLeave = (uid) => {
       const u = users.find(x => x.id === uid);
       const currentYr = new Date().getFullYear();
@@ -458,11 +490,14 @@ export default function App() {
     if (!user) return {};
     const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
     
-    // PENGIRAAN SOCSO & LINDUNG 24 JAM (HANYA UNTUK STAFF SAHAJA)
     let socso = 0;
     if (user.role === 'staff') {
         const baseSocso = (user.customSocso && user.customSocso !== 0) ? user.customSocso : ((user.baseSalary * 0.005) + 5);
-        const lindungAmount = user.lindung24JamPercent ? (user.baseSalary * (user.lindung24JamPercent / 100)) : 0;
+        
+        // Lindung 24 Jam (RM manual) dikira bermula 1 Ogos 2026 (month index >= 7) dan ke atas
+        const isAfterAug2026 = (forMonthDate.getFullYear() > 2026) || (forMonthDate.getFullYear() === 2026 && forMonthDate.getMonth() >= 7);
+        const lindungAmount = isAfterAug2026 ? (Number(user.lindung24Jam) || 0) : 0;
+        
         socso = baseSocso + lindungAmount;
     }
 
@@ -476,7 +511,24 @@ export default function App() {
   const effectiveCutoff = settings.customSubmissionDate || lastDayOfMonthDate;
   const isCutoffReached = currentDate.getDate() >= effectiveCutoff;
 
-  if (!currentUser) return <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans"><Card className="w-full max-w-sm p-8"><div className="flex justify-center mb-6"><UltramapLogo /></div><form onSubmit={handleLogin} className="space-y-4"><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><div><label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded outline-none" required /></div><button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold uppercase tracking-widest text-sm">Masuk</button></form></Card></div>;
+  if (!currentUser) return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
+      <Card className="w-full max-w-sm p-8">
+        <div className="flex justify-center mb-6"><UltramapLogo /></div>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded outline-none" required />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded outline-none" required />
+          </div>
+          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold uppercase tracking-widest text-sm hover:bg-blue-700 transition-colors">Masuk</button>
+        </form>
+      </Card>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
@@ -512,7 +564,33 @@ export default function App() {
                                             <button onClick={handleSaveCutoff} className="ml-auto bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-colors shadow">Simpan</button>
                                         </div>
                                     </Card>
-                                    <Card className="p-6 shadow-sm"><h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-2 text-[10px]">Nama</th><th className="p-2 text-[10px]">Basic</th><th className="p-2 text-[10px]">Elaun</th><th className="p-2 text-[10px] text-center">Cuti</th><th className="p-2 text-[10px]">Edit</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b font-sans hover:bg-slate-50"><td className="p-2 font-bold uppercase">{u.nickname}</td><td className="p-2">{u.baseSalary.toFixed(2)}</td><td className="p-2">{u.fixedAllowance.toFixed(2)}</td><td className="p-2 text-center">{u.leaveBalance}</td><td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td></tr>))}</tbody></table></Card>
+                                    <Card className="p-6 shadow-sm overflow-x-auto">
+                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Edit2 size={20}/> Tetapan Gaji & Cuti</h3>
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-slate-50 text-slate-500 uppercase">
+                                                <tr>
+                                                    <th className="p-2 text-[10px]">Nama</th>
+                                                    <th className="p-2 text-[10px]">Basic</th>
+                                                    <th className="p-2 text-[10px]">Elaun</th>
+                                                    <th className="p-2 text-[10px]">Lindung 24J (RM)</th>
+                                                    <th className="p-2 text-[10px] text-center">Cuti</th>
+                                                    <th className="p-2 text-[10px]">Edit</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {users.map(u => (
+                                                    <tr key={u.id} className="border-b font-sans hover:bg-slate-50">
+                                                        <td className="p-2 font-bold uppercase">{u.nickname}</td>
+                                                        <td className="p-2">{u.baseSalary.toFixed(2)}</td>
+                                                        <td className="p-2">{u.fixedAllowance.toFixed(2)}</td>
+                                                        <td className="p-2 text-blue-600 font-semibold">{u.role === 'staff' ? (Number(u.lindung24Jam || 0)).toFixed(2) : '-'}</td>
+                                                        <td className="p-2 text-center">{u.leaveBalance}</td>
+                                                        <td><button onClick={() => setEditingUser(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </Card>
                                 </>
                             ) : (
                                 <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={(dateStr, userId, type, shouldDelete, remark) => { const existing = attendance.find(a => a.date === dateStr && a.userId === userId); if (shouldDelete && existing) deleteDoc(doc(db, "attendance", existing.id)); else if (existing) updateDoc(doc(db, "attendance", existing.id), { remark }); else addDoc(collection(db, "attendance"), { date: dateStr, userId, type, remark }); }} tsStatus={timesheets.find(t => t.userId === currentUser.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' }} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
@@ -570,24 +648,64 @@ export default function App() {
                 </div>
             )}
             {editingUser && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200"><h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3><form onSubmit={async (e)=>{e.preventDefault(); await updateDoc(doc(db, "users", editingUser.id), { baseSalary: editingUser.baseSalary, fixedAllowance: editingUser.fixedAllowance, customEpf: editingUser.customEpf, customSocso: editingUser.customSocso, lindung24JamPercent: editingUser.lindung24JamPercent || 0, leaveBalance: editingUser.leaveBalance }); setEditingUser(null); alert("Berjaya disimpan!");}} className="space-y-4">
-                    <div><label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} /></div>
-                    
-                    {/* HIDE SOCSO IF SUPER ADMIN / MANAGER */}
-                    <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-3' : 'grid-cols-1'} gap-2`}>
-                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">KWSP Manual</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} /></div>
-                        
-                        {editingUser.role === 'staff' && (
-                            <>
-                                <div><label className="text-[10px] font-bold text-slate-400 uppercase">SOCSO (RM)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} /></div>
-                                <div><label className="text-[10px] font-bold text-slate-400 uppercase">Lindung 24J (%)</label><input type="number" step="0.1" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.lindung24JamPercent || ''} onChange={e=>setEditingUser({...editingUser, lindung24JamPercent: e.target.value ? Number(e.target.value) : null})} /></div>
-                            </>
-                        )}
-                    </div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200">
+                        <h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3>
+                        <form onSubmit={async (e)=>{
+                            e.preventDefault(); 
+                            await updateDoc(doc(db, "users", editingUser.id), { 
+                                baseSalary: editingUser.baseSalary, 
+                                fixedAllowance: editingUser.fixedAllowance, 
+                                customEpf: editingUser.customEpf, 
+                                customSocso: editingUser.customSocso, 
+                                lindung24Jam: editingUser.lindung24Jam ? Number(editingUser.lindung24Jam) : 0, 
+                                leaveBalance: editingUser.leaveBalance 
+                            }); 
+                            setEditingUser(null); 
+                            alert("Berjaya disimpan!");
+                        }} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label>
+                                    <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase">Elaun Tetap (RM)</label>
+                                    <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.fixedAllowance} onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} />
+                                </div>
+                            </div>
+                            
+                            <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-3' : 'grid-cols-1'} gap-2`}>
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">KWSP Manual</label>
+                                    <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} />
+                                </div>
+                                
+                                {editingUser.role === 'staff' && (
+                                    <>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">SOCSO (RM)</label>
+                                            <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-blue-600 uppercase">Lindung 24J (RM)</label>
+                                            <input type="number" step="0.01" placeholder="0.00" className="w-full border border-blue-200 bg-blue-50/30 p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.lindung24Jam || ''} onChange={e=>setEditingUser({...editingUser, lindung24Jam: e.target.value ? Number(e.target.value) : 0})} />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
 
-                    <div><label className="text-xs font-bold text-slate-500 uppercase">Kelayakan Cuti (Hari)</label><input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} /></div>
-                    <div className="flex gap-2 pt-4"><button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200 transition-colors">Batal</button><button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md shadow-blue-200 hover:bg-blue-700 transition-all">Simpan</button></div>
-                </form></Card></div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase">Kelayakan Cuti (Hari)</label>
+                                <input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} />
+                            </div>
+                            <div className="flex gap-2 pt-4">
+                                <button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200 transition-colors">Batal</button>
+                                <button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded font-bold uppercase text-xs shadow-md shadow-blue-200 hover:bg-blue-700 transition-all">Simpan</button>
+                            </div>
+                        </form>
+                    </Card>
+                </div>
             )}
         </main>
     </div>
