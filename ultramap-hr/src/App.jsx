@@ -764,14 +764,14 @@ const HR_THEME = `
 
   .hr-sidebar {
     display: grid;
-    grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
     padding: 8px 12px;
   }
-  .hr-sidebar .hr-brand { grid-area: 1 / 2; width: min(47vw, 165px); padding: 0; }
+  .hr-sidebar .hr-brand { grid-area: 1 / 1; justify-self: start; width: min(47vw, 165px); padding: 0; }
   .hr-sidebar nav { grid-column: 1 / -1; }
   .hr-signout {
-    grid-area: 1 / 3;
+    grid-area: 1 / 2;
     justify-self: end;
     justify-content: center;
     padding: 0;
