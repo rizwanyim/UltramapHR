@@ -768,7 +768,7 @@ const HR_THEME = `
     gap: 8px;
     padding: 8px 12px;
   }
-  .hr-sidebar .hr-brand { grid-area: 1 / 1; justify-self: start; width: min(47vw, 165px); padding: 0; }
+  .hr-sidebar .hr-brand { grid-area: 1 / 1; justify-self: start; width: min(47vw, 135px); padding: 0; }
   .hr-sidebar nav { grid-column: 1 / -1; }
   .hr-signout {
     grid-area: 1 / 2;
