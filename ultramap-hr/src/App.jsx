@@ -1088,7 +1088,7 @@ export default function App() {
                                                     <th className="p-2 text-[10px]">Nama</th>
                                                     <th className="p-2 text-[10px]">Basic</th>
                                                     <th className="p-2 text-[10px]">Elaun</th>
-                                                    <th className="p-2 text-[10px]">Lindung 24J (Bulan Ini)</th>
+                                                    <th className="p-2 text-[10px]">Lindung 24Jam</th>
                                                     <th className="p-2 text-[10px] text-center">Cuti</th>
                                                     <th className="p-2 text-[10px]">Edit</th>
                                                 </tr>
