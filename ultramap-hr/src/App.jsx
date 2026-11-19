@@ -97,11 +97,14 @@ const Badge = ({ status }) => {
   return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[status] || styles.Pending}`}>{statusLabel(status)}</span>;
 };
 
-const UltramapLogo = ({ className = "h-10" }) => {
-  const [missing, setMissing] = useState(false);
-  return missing ? <strong className="hr-wordmark">ULTRAMAP</strong> : (
-    <img src="/logo.png" alt="Ultramap Solution" className={className} onError={() => setMissing(true)} />
-  );
+const UltramapLogo = ({ white = false, className = "h-10" }) => {
+  const sources = white ? ['/logo-white.png'] : ['/logo.png', '/logo-original.jpg'];
+  const [attempt, setAttempt] = useState(0);
+  const src = sources[attempt];
+
+  return src ? (
+    <img src={src} alt="Ultramap Solution" className={className} onError={() => setAttempt(attempt + 1)} />
+  ) : <strong className="hr-wordmark">ULTRAMAP</strong>;
 };
 
 const StaffAvatar = ({ user }) => {
@@ -661,12 +664,16 @@ const HR_THEME = `
 .hr-admin { --accent: #274bb3; --sidebar: #111e35; }
 .hr-ui :is(h1,h2,h3), .hr-metric strong { font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif; }
 .hr-sidebar { gap: 18px; overflow: auto; }
-.hr-brand-logo {
-  display: flex; align-items: center; justify-content: center; padding: 7px;
-  background: white; border-radius: 10px; min-height: 44px; width: 88px; flex: none;
+.hr-brand-logo { display: flex; align-items: center; width: 100%; }
+.hr-logo-image { display: block; width: 100%; height: auto; object-fit: contain; }
+.hr-brand { display: grid; gap: 4px; width: min(100%, 190px); }
+.hr-brand > small { padding-left: 4px; }
+.hr-login-brand .hr-brand { width: min(100%, 275px); }
+.hr-wordmark { font-size: 1rem; color: #111e35; font-weight: 800; }
+.hr-brand .hr-wordmark { color: #fff; }
+@media (max-width: 450px) {
+  .hr-sidebar .hr-brand { width: min(55%, 156px); }
 }
-.hr-logo-image { width: 100%; max-height: 34px; object-fit: contain; }
-.hr-wordmark { font-size: .67rem; color: #111e35; letter-spacing: -.03em; }
 .hr-sidebar button[aria-current="page"] { background: #afdcd827; color: #d1fff0; box-shadow: inset 3px 0 #8de4c9; }
 .hr-sidebar nav button { display: flex; align-items: center; gap: 10px; border-radius: 9px; padding: 11px; color: #edf4fa; text-align: left; font-size: .9rem; }
 .hr-sidebar nav button:hover { background: #fff2; }
@@ -745,8 +752,8 @@ const HR_THEME = `
 
 const HrBrand = () => (
   <div className="hr-brand">
-    <div className="hr-brand-logo"><UltramapLogo className="hr-logo-image" /></div>
-    <div><strong>Ultramap Solution</strong><small>Portal HR</small></div>
+    <div className="hr-brand-logo"><UltramapLogo white className="hr-logo-image" /></div>
+    <small>Portal HR</small>
   </div>
 );
 
