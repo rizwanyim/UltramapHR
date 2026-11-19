@@ -183,8 +183,8 @@ const PayslipDesign = ({ data, user }) => {
       <style>{`@media print { @page { size: A4 landscape; margin: 0; } body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; } }`}</style>
       <div className="bg-white shadow-2xl p-12 w-[297mm] h-[210mm] text-black font-sans relative print:shadow-none print:w-[297mm] print:h-[210mm] print:absolute print:top-0 print:left-0 print:scale-[0.96] print:origin-top-left flex flex-col box-border overflow-hidden">
         <div className="flex-grow pb-[70mm]">
-            <div className="flex justify-between items-end mb-8 border-b-2 border-slate-800 pb-4">
-              <div><UltramapLogo /></div> 
+            <div className="flex justify-between items-center gap-4 mb-8 border-b-2 border-slate-800 pb-4">
+              <div><UltramapLogo className="hr-payslip-logo" /></div> 
               <div className="text-right">
                 <p className="font-bold text-xs mb-1 text-slate-500 font-sans tracking-widest text-right uppercase">Private & Confidential</p>
                 <h2 className="text-xl font-bold text-slate-800 tracking-wide font-sans text-right uppercase">ULTRAMAP SOLUTION</h2>
@@ -671,8 +671,13 @@ const HR_THEME = `
 .hr-login-brand .hr-brand { width: min(100%, 275px); }
 .hr-wordmark { font-size: 1rem; color: #111e35; font-weight: 800; }
 .hr-brand .hr-wordmark { color: #fff; }
-@media (max-width: 450px) {
-  .hr-sidebar .hr-brand { width: min(55%, 156px); }
+.hr-payslip-logo {
+  display: block;
+  width: auto;
+  height: 60px;
+  max-width: 200px;
+  object-fit: contain;
+  object-position: left center;
 }
 .hr-sidebar button[aria-current="page"] { background: #afdcd827; color: #d1fff0; box-shadow: inset 3px 0 #8de4c9; }
 .hr-sidebar nav button { display: flex; align-items: center; gap: 10px; border-radius: 9px; padding: 11px; color: #edf4fa; text-align: left; font-size: .9rem; }
@@ -742,6 +747,53 @@ const HR_THEME = `
   .hr-employee .hr-main { padding-bottom: calc(86px + env(safe-area-inset-bottom)); }
   .hr-admin .hr-sidebar nav button { white-space: nowrap; }
 }
+@media screen and (max-width: 590px) {
+  .hr-login { grid-template-rows: auto 1fr; min-height: 100svh; }
+  .hr-login-brand { align-items: center; gap: 8px; padding: 14px 18px 18px; text-align: center; }
+  .hr-login-brand .hr-brand { width: min(58vw, 210px); justify-self: center; }
+  .hr-login-intro h1 { font-size: clamp(1.3rem, 5.3vw, 1.65rem); line-height: 1.2; letter-spacing: -.035em; text-wrap: balance; }
+  .hr-login-intro p { margin-top: 5px; font-size: .875rem; line-height: 1.4; }
+  .hr-login-main { padding: 14px 16px 20px; }
+  .hr-login-content { padding: 17px 18px; border-radius: 18px; }
+  .hr-login-content .hr-icon { width: 18px; height: 18px; padding: 7px; }
+  .hr-login-content h2 { font-size: 1.5rem; margin-top: 8px; }
+  .hr-login-content p { font-size: .875rem; line-height: 1.4; margin-bottom: 12px; }
+  .hr-login-content label { margin-top: 10px; }
+  .hr-login-content input { font-size: 1rem; padding-block: 9px; }
+  .hr-login-content .hr-primary { margin-top: 14px; }
+
+  .hr-sidebar {
+    display: grid;
+    grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr);
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  .hr-sidebar .hr-brand { grid-area: 1 / 2; width: min(47vw, 165px); padding: 0; }
+  .hr-sidebar nav { grid-column: 1 / -1; }
+  .hr-signout {
+    grid-area: 1 / 3;
+    justify-self: end;
+    justify-content: center;
+    padding: 0;
+    width: 44px;
+    height: 44px;
+  }
+  .hr-signout span { display: none; }
+  .hr-topbar { padding: 8px 12px; gap: 8px; min-height: 52px; font-size: .81rem; }
+  .hr-topbar > span { white-space: nowrap; }
+  .hr-profile { min-width: 0; gap: 7px; }
+  .hr-profile > div { min-width: 0; overflow-wrap: anywhere; }
+  .hr-profile .hr-avatar { width: 32px; height: 32px; }
+  .hr-profile small { margin-top: 2px; font-size: .72rem; }
+  .hr-heading h1 { font-size: clamp(1.35rem, 6vw, 1.65rem); }
+  .hr-heading p { font-size: .875rem; margin-top: 4px; }
+  .hr-period { padding: 6px 9px; font-size: .8rem; }
+  .hr-dashboard, .hr-stack { gap: 15px; }
+  .hr-hero { padding: 17px; gap: 12px; border-radius: 17px; }
+  .hr-hero h2 { font-size: 1.25rem; line-height: 1.25; }
+  .hr-hero p { font-size: .875rem; }
+  .hr-light-action { min-height: 44px; font-size: .875rem; }
+}
 @media (max-width: 500px) {
   .hr-drawer { width: 100%; margin: auto 0 0; height: auto; border-radius: 18px 18px 0 0; }
   .hr-site-label span { display: none; }
@@ -753,6 +805,7 @@ const HR_THEME = `
 const HrBrand = () => (
   <div className="hr-brand">
     <div className="hr-brand-logo"><UltramapLogo white className="hr-logo-image" /></div>
+    <small>Portal HR</small>
   </div>
 );
 
@@ -988,7 +1041,7 @@ export default function App() {
   );
 
   const isAdmin = currentUser.role !== 'staff';
-  const portalTitle = isAdmin ? 'Panel Admin' : 'Portal Staff';
+  const portalTitle = isAdmin ? 'Panel Admin' : 'Portal Pekerja';
   const monthLabel = currentDate.toLocaleDateString('ms-MY', { month: 'long', year: 'numeric' });
   const activeUser = users.find(user => user.id === currentUser.id) || currentUser;
   const monthStatus = userId => timesheets.find(t => t.userId === userId && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' };
@@ -1016,8 +1069,8 @@ export default function App() {
               </button>
             ))}
           </nav>
-          <button className="hr-signout" onClick={() => { setViewedPayslip(null); setEditingUser(null); setShowAdminTimesheet(false); setPage('hr-overview'); setLeaveOpen(false); setHideSalary(true); signOut(auth); }}>
-            <LogOut size={18} aria-hidden="true" /> Keluar
+          <button className="hr-signout" aria-label="Keluar" onClick={() => { setViewedPayslip(null); setEditingUser(null); setShowAdminTimesheet(false); setPage('hr-overview'); setLeaveOpen(false); setHideSalary(true); signOut(auth); }}>
+            <LogOut size={18} aria-hidden="true" /><span>Keluar</span>
           </button>
         </aside>
         <div className="hr-workspace-body">
@@ -1025,7 +1078,7 @@ export default function App() {
             <span>{portalTitle}</span>
             <div className="hr-profile">
               <StaffAvatar user={activeUser} />
-              <div><strong>{currentUser.name}</strong><small>{currentUser.role === 'manager' ? 'Manager' : currentUser.role === 'super_admin' ? 'Super Admin' : 'Operation Team'}</small></div>
+              <div><strong>{currentUser.name}</strong><small>{currentUser.role === 'manager' ? 'Manager' : currentUser.role === 'super_admin' ? 'Super Admin' : 'Pekerja'}</small></div>
             </div>
           </header>
         <main className="hr-main">
@@ -1088,7 +1141,7 @@ export default function App() {
                                                     <th className="p-2 text-[10px]">Nama</th>
                                                     <th className="p-2 text-[10px]">Basic</th>
                                                     <th className="p-2 text-[10px]">Elaun</th>
-                                                    <th className="p-2 text-[10px]">Lindung 24Jam</th>
+                                                    <th className="p-2 text-[10px]">Lindung 24J (Bulan Ini)</th>
                                                     <th className="p-2 text-[10px] text-center">Cuti</th>
                                                     <th className="p-2 text-[10px]">Edit</th>
                                                 </tr>
