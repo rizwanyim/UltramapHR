@@ -753,7 +753,6 @@ const HR_THEME = `
 const HrBrand = () => (
   <div className="hr-brand">
     <div className="hr-brand-logo"><UltramapLogo white className="hr-logo-image" /></div>
-    <small>Portal HR</small>
   </div>
 );
 
@@ -989,7 +988,7 @@ export default function App() {
   );
 
   const isAdmin = currentUser.role !== 'staff';
-  const portalTitle = isAdmin ? 'Panel Admin' : 'Portal Pekerja';
+  const portalTitle = isAdmin ? 'Panel Admin' : 'Portal Staff';
   const monthLabel = currentDate.toLocaleDateString('ms-MY', { month: 'long', year: 'numeric' });
   const activeUser = users.find(user => user.id === currentUser.id) || currentUser;
   const monthStatus = userId => timesheets.find(t => t.userId === userId && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' };
@@ -1026,7 +1025,7 @@ export default function App() {
             <span>{portalTitle}</span>
             <div className="hr-profile">
               <StaffAvatar user={activeUser} />
-              <div><strong>{currentUser.name}</strong><small>{currentUser.role === 'manager' ? 'Manager' : currentUser.role === 'super_admin' ? 'Super Admin' : 'Pekerja'}</small></div>
+              <div><strong>{currentUser.name}</strong><small>{currentUser.role === 'manager' ? 'Manager' : currentUser.role === 'super_admin' ? 'Super Admin' : 'Operation Team'}</small></div>
             </div>
           </header>
         <main className="hr-main">
