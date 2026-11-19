@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
-import { Calendar, FileText, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Trash2, Settings, Download, History, ShieldCheck } from 'lucide-react';
+import { Calendar, FileText, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Trash2, Settings, Download, History, ShieldCheck, Lock, Unlock } from 'lucide-react';
 
 // --- 1. CONFIG FIREBASE ---
 const firebaseConfig = {
@@ -167,16 +167,9 @@ const PayslipDesign = ({ data, user }) => {
                   <div className="space-y-2 text-sm font-sans">
                     <div className="flex justify-between"><span>EPF (KWSP)</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
                     {user.role === 'staff' && (
-                        <div>
-                          <div className="flex justify-between">
-                            <span>SOCSO (PERKESO)</span>
-                            <span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span>
-                          </div>
-                          {data.lindungAmount > 0 && (
-                            <p className="text-[10px] text-slate-400 italic mt-0.5">
-                              *Termasuk Lindung 24 Jam (RM {data.lindungAmount.toFixed(2)})
-                            </p>
-                          )}
+                        <div className="flex justify-between">
+                          <span>SOCSO (PERKESO)</span>
+                          <span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span>
                         </div>
                     )}
                   </div>
@@ -421,6 +414,8 @@ export default function App() {
   const [hideSalary, setHideSalary] = useState(false);
   const [showAdminTimesheet, setShowAdminTimesheet] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [isBaseFieldsUnlocked, setIsBaseFieldsUnlocked] = useState(false);
+  const [isLindungUnlocked, setIsLindungUnlocked] = useState(true);
   const [selectedLindungMonth, setSelectedLindungMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -530,9 +525,8 @@ export default function App() {
           ? Number(user.customSocso) 
           : ((Number(user.baseSalary) * 0.005) + 5);
         
-        // Semak tahun & bulan slip gaji yang sedang dipaparkan
         const targetYear = forMonthDate.getFullYear();
-        const targetMonth = forMonthDate.getMonth(); // 0 = Jan, 7 = Ogos
+        const targetMonth = forMonthDate.getMonth();
         const monthKey = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
         
         const isAfterAug2026 = (targetYear > 2026) || (targetYear === 2026 && targetMonth >= 7);
@@ -568,13 +562,19 @@ export default function App() {
       : '2026-08';
 
     const existingMap = userObj.lindung24JamMap || {};
-    const initialVal = existingMap[defaultKey] !== undefined ? existingMap[defaultKey] : '';
+    const hasSavedValue = existingMap[defaultKey] !== undefined && existingMap[defaultKey] !== null && existingMap[defaultKey] !== '';
+    const initialVal = hasSavedValue ? existingMap[defaultKey] : '';
 
     setSelectedLindungMonth(defaultKey);
+    // Kunci medan asas secara default
+    setIsBaseFieldsUnlocked(false);
+    // Jika bulan tersebut sudah ada rekod disimpan, auto-lock. Jika belum diisi, buka untuk isi.
+    setIsLindungUnlocked(!hasSavedValue);
+
     setEditingUser({
       ...userObj,
       lindung24JamMap: existingMap,
-      currentLindungInput: initialVal === 0 ? '' : initialVal
+      currentLindungInput: initialVal === 0 && !hasSavedValue ? '' : initialVal
     });
   };
 
@@ -712,7 +712,7 @@ export default function App() {
                                         ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold uppercase hover:bg-slate-200 transition-colors">Semak & Luluskan</button>)}</Card>);
                                     })}</div></div>
                                     <Card className="p-6 shadow-sm"><h3 className="font-bold mb-4 uppercase text-sm tracking-widest border-b pb-2">Pengesahan Cuti (Admin)</h3>
-                                        {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 hover:border-emerald-200 transition-all"><div className="text-xs"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><button onClick={()=>updateDoc(doc(db, "leaves", leave.id), { status: 'Approved', approvedBy: currentUser.nickname })} className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-emerald-700 transition-colors">Lulus</button></div>))}
+                                        {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 hover:border-emerald-200 transition-all"><div className="text-xs"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><button onClick={()=>updateDoc(doc(db, "leaves", leave.id), { status: 'Approved', approvedBy: currentUser.nickname })} className="bg-red-600 text-white px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm hover:bg-red-700 transition-colors">Sahkan Cuti</button></div>))}
                                         {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic">Tiada permohonan cuti baru.</p>}
                                         <LeaveHistoryViewer users={users} leaves={leaves} getRemainingLeave={getRemainingLeave} />
                                     </Card>
@@ -726,17 +726,30 @@ export default function App() {
             {editingUser && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200">
-                        <h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3>
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 className="font-bold text-lg uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3>
+                            <button 
+                                type="button" 
+                                onClick={() => setIsBaseFieldsUnlocked(!isBaseFieldsUnlocked)} 
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${isBaseFieldsUnlocked ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'}`}
+                                title="Buka kunci untuk edit Gaji Pokok, Elaun, KWSP, SOCSO & Cuti"
+                            >
+                                <Edit2 size={12} />
+                                {isBaseFieldsUnlocked ? 'Kunci Tetapan' : 'Edit Tetapan'}
+                            </button>
+                        </div>
+
                         <form onSubmit={async (e)=>{
                             e.preventDefault(); 
-                            const parsedAmount = editingUser.currentLindungInput !== '' && editingUser.currentLindungInput !== null
-                              ? parseFloat(editingUser.currentLindungInput) || 0
-                              : 0;
+                            const hasValue = editingUser.currentLindungInput !== '' && editingUser.currentLindungInput !== null;
+                            const parsedAmount = hasValue ? (parseFloat(editingUser.currentLindungInput) || 0) : 0;
 
-                            const updatedMap = {
-                              ...(editingUser.lindung24JamMap || {}),
-                              [selectedLindungMonth]: parsedAmount
-                            };
+                            const updatedMap = { ...(editingUser.lindung24JamMap || {}) };
+                            if (hasValue) {
+                                updatedMap[selectedLindungMonth] = parsedAmount;
+                            } else {
+                                delete updatedMap[selectedLindungMonth];
+                            }
 
                             await updateDoc(doc(db, "users", editingUser.id), { 
                                 baseSalary: Number(editingUser.baseSalary), 
@@ -751,34 +764,85 @@ export default function App() {
                         }} className="space-y-4">
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase">Gaji Pokok (RM)</label>
-                                    <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.baseSalary} onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} />
+                                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+                                        Gaji Pokok (RM) {!isBaseFieldsUnlocked && <Lock size={10} className="text-slate-400" />}
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        step="0.01" 
+                                        disabled={!isBaseFieldsUnlocked}
+                                        className={`w-full border p-2 rounded outline-none transition-all ${!isBaseFieldsUnlocked ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-400'}`} 
+                                        value={editingUser.baseSalary} 
+                                        onChange={e=>setEditingUser({...editingUser, baseSalary: Number(e.target.value)})} 
+                                    />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase">Elaun Tetap (RM)</label>
-                                    <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.fixedAllowance} onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} />
+                                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+                                        Elaun Tetap (RM) {!isBaseFieldsUnlocked && <Lock size={10} className="text-slate-400" />}
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        step="0.01" 
+                                        disabled={!isBaseFieldsUnlocked}
+                                        className={`w-full border p-2 rounded outline-none transition-all ${!isBaseFieldsUnlocked ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-400'}`} 
+                                        value={editingUser.fixedAllowance} 
+                                        onChange={e=>setEditingUser({...editingUser, fixedAllowance: Number(e.target.value)})} 
+                                    />
                                 </div>
                             </div>
                             
                             <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-3' : 'grid-cols-1'} gap-2 items-start`}>
                                 <div>
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase">KWSP Manual</label>
-                                    <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customEpf || ''} onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} />
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
+                                        KWSP Manual {!isBaseFieldsUnlocked && <Lock size={9} className="text-slate-400" />}
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        step="0.01" 
+                                        disabled={!isBaseFieldsUnlocked}
+                                        className={`w-full border p-2 rounded outline-none transition-all ${!isBaseFieldsUnlocked ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-400'}`} 
+                                        value={editingUser.customEpf || ''} 
+                                        onChange={e=>setEditingUser({...editingUser, customEpf: e.target.value ? Number(e.target.value) : null})} 
+                                    />
                                 </div>
                                 
                                 {editingUser.role === 'staff' && (
                                     <>
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase">SOCSO (RM)</label>
-                                            <input type="number" step="0.01" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.customSocso || ''} onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} />
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
+                                                SOCSO (RM) {!isBaseFieldsUnlocked && <Lock size={9} className="text-slate-400" />}
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                step="0.01" 
+                                                disabled={!isBaseFieldsUnlocked}
+                                                className={`w-full border p-2 rounded outline-none transition-all ${!isBaseFieldsUnlocked ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-400'}`} 
+                                                value={editingUser.customSocso || ''} 
+                                                onChange={e=>setEditingUser({...editingUser, customSocso: e.target.value ? Number(e.target.value) : null})} 
+                                            />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-blue-600 uppercase">Lindung 24J (RM)</label>
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] font-bold text-blue-600 uppercase flex items-center gap-1">
+                                                    Lindung 24J {!isLindungUnlocked && <Lock size={9} className="text-blue-600" />}
+                                                </label>
+                                                {!isLindungUnlocked && (
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setIsLindungUnlocked(true)} 
+                                                        className="text-blue-600 hover:text-blue-800 p-0.5 rounded hover:bg-blue-50 transition-colors"
+                                                        title="Edit nilai Lindung 24 Jam bulan ini"
+                                                    >
+                                                        <Edit2 size={11} />
+                                                    </button>
+                                                )}
+                                            </div>
                                             <input 
                                                 type="number" 
                                                 step="0.01" 
                                                 placeholder="0.00" 
-                                                className="w-full border border-blue-200 bg-blue-50/30 p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold text-blue-800" 
+                                                disabled={!isLindungUnlocked}
+                                                className={`w-full border p-2 rounded outline-none transition-all font-semibold ${!isLindungUnlocked ? 'border-slate-200 bg-slate-100 text-slate-600 cursor-not-allowed' : 'border-blue-300 bg-blue-50/40 text-blue-800 focus:ring-2 focus:ring-blue-400'}`} 
                                                 value={editingUser.currentLindungInput} 
                                                 onChange={e => {
                                                   const val = e.target.value;
@@ -796,13 +860,14 @@ export default function App() {
                                                 value={selectedLindungMonth} 
                                                 onChange={(e) => {
                                                   const newKey = e.target.value;
-                                                  const savedVal = (editingUser.lindung24JamMap && editingUser.lindung24JamMap[newKey] !== undefined) 
-                                                    ? editingUser.lindung24JamMap[newKey] 
-                                                    : '';
+                                                  const hasSaved = editingUser.lindung24JamMap && editingUser.lindung24JamMap[newKey] !== undefined && editingUser.lindung24JamMap[newKey] !== null && editingUser.lindung24JamMap[newKey] !== '';
+                                                  const savedVal = hasSaved ? editingUser.lindung24JamMap[newKey] : '';
+                                                  
                                                   setSelectedLindungMonth(newKey);
+                                                  setIsLindungUnlocked(!hasSaved);
                                                   setEditingUser({
                                                     ...editingUser,
-                                                    currentLindungInput: savedVal === 0 ? '' : savedVal
+                                                    currentLindungInput: savedVal === 0 && !hasSaved ? '' : savedVal
                                                   });
                                                 }}
                                                 className="w-full border border-blue-200 bg-white p-1.5 rounded text-[11px] font-bold text-slate-700 uppercase outline-none focus:border-blue-500 cursor-pointer"
@@ -817,8 +882,16 @@ export default function App() {
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase">Kelayakan Cuti (Hari)</label>
-                                <input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all" value={editingUser.leaveBalance} onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} />
+                                <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    Kelayakan Cuti (Hari) {!isBaseFieldsUnlocked && <Lock size={10} className="text-slate-400" />}
+                                </label>
+                                <input 
+                                    type="number" 
+                                    disabled={!isBaseFieldsUnlocked}
+                                    className={`w-full border p-2 rounded outline-none transition-all ${!isBaseFieldsUnlocked ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-400'}`} 
+                                    value={editingUser.leaveBalance} 
+                                    onChange={e=>setEditingUser({...editingUser, leaveBalance: Number(e.target.value)})} 
+                                />
                             </div>
                             <div className="flex gap-2 pt-4">
                                 <button type="button" onClick={()=>setEditingUser(null)} className="flex-1 bg-slate-100 p-2 rounded font-bold uppercase text-xs hover:bg-slate-200 transition-colors">Batal</button>
