@@ -60,11 +60,11 @@ const JOHOR_HOLIDAYS = [
   { date: '2026-12-25', name: 'Hari Krismas' },
 ];
 
-// Senarai bulan bermula Ogos 2026 hingga bulan semasa (atau tahun hadapan)
+// Senarai bulan bermula Ogos 2026
 const getLindungMonthOptions = () => {
   const options = [];
-  const start = new Date(2026, 7, 1); // Ogos 2026
-  const end = new Date(new Date().getFullYear() + 1, 11, 1); // Sehingga Disember tahun depan
+  const start = new Date(2026, 7, 1); // Ogos 2026 (Index 7 = Ogos)
+  const end = new Date(new Date().getFullYear() + 1, 11, 1);
   let curr = new Date(start);
   while (curr <= end) {
     const key = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}`;
@@ -167,7 +167,17 @@ const PayslipDesign = ({ data, user }) => {
                   <div className="space-y-2 text-sm font-sans">
                     <div className="flex justify-between"><span>EPF (KWSP)</span><span className="text-red-600 font-semibold">{data.epf.toFixed(2)}</span></div>
                     {user.role === 'staff' && (
-                        <div className="flex justify-between"><span>SOCSO (PERKESO)</span><span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span></div>
+                        <div>
+                          <div className="flex justify-between">
+                            <span>SOCSO (PERKESO)</span>
+                            <span className="text-red-600 font-semibold">{data.socso.toFixed(2)}</span>
+                          </div>
+                          {data.lindungAmount > 0 && (
+                            <p className="text-[10px] text-slate-400 italic mt-0.5">
+                              *Termasuk Lindung 24 Jam (RM {data.lindungAmount.toFixed(2)})
+                            </p>
+                          )}
+                        </div>
                     )}
                   </div>
                 </div>
@@ -510,23 +520,25 @@ export default function App() {
   const calculatePayroll = (userId, forMonthDate = currentDate) => {
     const user = users.find(u => u.id === userId);
     if (!user) return {};
-    const epf = (user.customEpf !== null && user.customEpf !== undefined) ? user.customEpf : (user.baseSalary * 0.11);
+    const epf = (user.customEpf !== null && user.customEpf !== undefined) ? Number(user.customEpf) : (Number(user.baseSalary) * 0.11);
     
     let socso = 0;
+    let lindungAmount = 0;
+
     if (user.role === 'staff') {
-        const baseSocso = (user.customSocso && user.customSocso !== 0) ? user.customSocso : ((user.baseSalary * 0.005) + 5);
+        const baseSocso = (user.customSocso !== null && user.customSocso !== undefined && Number(user.customSocso) !== 0) 
+          ? Number(user.customSocso) 
+          : ((Number(user.baseSalary) * 0.005) + 5);
         
-        // Dapatkan nilai Lindung 24 Jam mengikut bulan slip gaji (Ogos 2026 dan ke atas)
-        const monthKey = `${forMonthDate.getFullYear()}-${String(forMonthDate.getMonth() + 1).padStart(2, '0')}`;
-        const isAfterAug2026 = (forMonthDate.getFullYear() > 2026) || (forMonthDate.getFullYear() === 2026 && forMonthDate.getMonth() >= 7);
+        // Semak tahun & bulan slip gaji yang sedang dipaparkan
+        const targetYear = forMonthDate.getFullYear();
+        const targetMonth = forMonthDate.getMonth(); // 0 = Jan, 7 = Ogos
+        const monthKey = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
         
-        let lindungAmount = 0;
-        if (isAfterAug2026) {
-            if (user.lindung24JamMap && user.lindung24JamMap[monthKey] !== undefined) {
-                lindungAmount = Number(user.lindung24JamMap[monthKey]) || 0;
-            } else {
-                lindungAmount = Number(user.lindung24Jam) || 0;
-            }
+        const isAfterAug2026 = (targetYear > 2026) || (targetYear === 2026 && targetMonth >= 7);
+        
+        if (isAfterAug2026 && user.lindung24JamMap && user.lindung24JamMap[monthKey] !== undefined) {
+            lindungAmount = Number(user.lindung24JamMap[monthKey]) || 0;
         }
         
         socso = baseSocso + lindungAmount;
@@ -535,7 +547,18 @@ export default function App() {
     const siteDays = attendance.filter(a => { const d = new Date(a.date); return a.userId === userId && d.getMonth() === forMonthDate.getMonth() && d.getFullYear() === forMonthDate.getFullYear(); }).length;
     const meal = user.role === 'staff' ? siteDays * 15 : 0;
     
-    return { month: forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase(), basicSalary: user.baseSalary, allowance: user.fixedAllowance, mealAllowance: meal, otAllowance: 0, bonus: 0, epf, socso, netPay: (user.baseSalary + user.fixedAllowance + meal - epf - socso) };
+    return { 
+      month: forMonthDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase(), 
+      basicSalary: Number(user.baseSalary), 
+      allowance: Number(user.fixedAllowance), 
+      mealAllowance: meal, 
+      otAllowance: 0, 
+      bonus: 0, 
+      epf, 
+      socso, 
+      lindungAmount,
+      netPay: (Number(user.baseSalary) + Number(user.fixedAllowance) + meal - epf - socso) 
+    };
   };
 
   const openEditModal = (userObj) => {
@@ -545,13 +568,13 @@ export default function App() {
       : '2026-08';
 
     const existingMap = userObj.lindung24JamMap || {};
-    const initialVal = existingMap[defaultKey] !== undefined ? existingMap[defaultKey] : (userObj.lindung24Jam || 0);
+    const initialVal = existingMap[defaultKey] !== undefined ? existingMap[defaultKey] : '';
 
     setSelectedLindungMonth(defaultKey);
     setEditingUser({
       ...userObj,
       lindung24JamMap: existingMap,
-      currentLindungInput: initialVal
+      currentLindungInput: initialVal === 0 ? '' : initialVal
     });
   };
 
@@ -629,12 +652,12 @@ export default function App() {
                                                 {users.map(u => {
                                                     const currVal = (u.lindung24JamMap && u.lindung24JamMap[currentMonthKey] !== undefined) 
                                                       ? u.lindung24JamMap[currentMonthKey] 
-                                                      : (u.lindung24Jam || 0);
+                                                      : 0;
                                                     return (
                                                       <tr key={u.id} className="border-b font-sans hover:bg-slate-50">
                                                           <td className="p-2 font-bold uppercase">{u.nickname}</td>
-                                                          <td className="p-2">{u.baseSalary.toFixed(2)}</td>
-                                                          <td className="p-2">{u.fixedAllowance.toFixed(2)}</td>
+                                                          <td className="p-2">{Number(u.baseSalary).toFixed(2)}</td>
+                                                          <td className="p-2">{Number(u.fixedAllowance).toFixed(2)}</td>
                                                           <td className="p-2 text-blue-600 font-semibold">{u.role === 'staff' ? Number(currVal).toFixed(2) : '-'}</td>
                                                           <td className="p-2 text-center">{u.leaveBalance}</td>
                                                           <td><button onClick={() => openEditModal(u)} className="text-blue-600 underline font-bold uppercase text-[10px] hover:text-blue-800">Edit</button></td>
@@ -706,20 +729,25 @@ export default function App() {
                         <h3 className="font-bold mb-4 text-xl border-b pb-2 uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3>
                         <form onSubmit={async (e)=>{
                             e.preventDefault(); 
+                            const parsedAmount = editingUser.currentLindungInput !== '' && editingUser.currentLindungInput !== null
+                              ? parseFloat(editingUser.currentLindungInput) || 0
+                              : 0;
+
                             const updatedMap = {
                               ...(editingUser.lindung24JamMap || {}),
-                              [selectedLindungMonth]: editingUser.currentLindungInput ? Number(editingUser.currentLindungInput) : 0
+                              [selectedLindungMonth]: parsedAmount
                             };
+
                             await updateDoc(doc(db, "users", editingUser.id), { 
-                                baseSalary: editingUser.baseSalary, 
-                                fixedAllowance: editingUser.fixedAllowance, 
-                                customEpf: editingUser.customEpf, 
-                                customSocso: editingUser.customSocso, 
+                                baseSalary: Number(editingUser.baseSalary), 
+                                fixedAllowance: Number(editingUser.fixedAllowance), 
+                                customEpf: editingUser.customEpf !== null && editingUser.customEpf !== '' ? Number(editingUser.customEpf) : null, 
+                                customSocso: editingUser.customSocso !== null && editingUser.customSocso !== '' ? Number(editingUser.customSocso) : null, 
                                 lindung24JamMap: updatedMap, 
-                                leaveBalance: editingUser.leaveBalance 
+                                leaveBalance: Number(editingUser.leaveBalance) 
                             }); 
                             setEditingUser(null); 
-                            alert(`Berjaya disimpan untuk ${selectedLindungMonth}!`);
+                            alert(`Berjaya disimpan! Lindung 24J (${selectedLindungMonth}): RM ${parsedAmount.toFixed(2)}`);
                         }} className="space-y-4">
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
@@ -751,15 +779,18 @@ export default function App() {
                                                 step="0.01" 
                                                 placeholder="0.00" 
                                                 className="w-full border border-blue-200 bg-blue-50/30 p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold text-blue-800" 
-                                                value={editingUser.currentLindungInput === 0 ? '' : editingUser.currentLindungInput} 
-                                                onChange={e => setEditingUser({
-                                                  ...editingUser, 
-                                                  currentLindungInput: e.target.value,
-                                                  lindung24JamMap: {
-                                                    ...(editingUser.lindung24JamMap || {}),
-                                                    [selectedLindungMonth]: e.target.value ? Number(e.target.value) : 0
-                                                  }
-                                                })} 
+                                                value={editingUser.currentLindungInput} 
+                                                onChange={e => {
+                                                  const val = e.target.value;
+                                                  setEditingUser({
+                                                    ...editingUser, 
+                                                    currentLindungInput: val,
+                                                    lindung24JamMap: {
+                                                      ...(editingUser.lindung24JamMap || {}),
+                                                      [selectedLindungMonth]: val !== '' ? parseFloat(val) : 0
+                                                    }
+                                                  });
+                                                }} 
                                             />
                                             <select 
                                                 value={selectedLindungMonth} 
@@ -767,11 +798,11 @@ export default function App() {
                                                   const newKey = e.target.value;
                                                   const savedVal = (editingUser.lindung24JamMap && editingUser.lindung24JamMap[newKey] !== undefined) 
                                                     ? editingUser.lindung24JamMap[newKey] 
-                                                    : 0;
+                                                    : '';
                                                   setSelectedLindungMonth(newKey);
                                                   setEditingUser({
                                                     ...editingUser,
-                                                    currentLindungInput: savedVal
+                                                    currentLindungInput: savedVal === 0 ? '' : savedVal
                                                   });
                                                 }}
                                                 className="w-full border border-blue-200 bg-white p-1.5 rounded text-[11px] font-bold text-slate-700 uppercase outline-none focus:border-blue-500 cursor-pointer"
