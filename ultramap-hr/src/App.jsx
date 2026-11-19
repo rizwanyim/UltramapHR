@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, addDoc, updateDoc, doc, query, where, onSnapshot, setDoc, deleteDoc, getDocs } from "firebase/firestore";
-import { Calendar, FileText, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Trash2, Settings, Download, History, ShieldCheck, Lock, Unlock, LayoutDashboard, Wallet, LogOut, Layers, ClipboardList } from 'lucide-react';
+import { Calendar, FileText, X, Send, Printer, ChevronLeft, ChevronRight, Eye, EyeOff, Edit2, Trash2, Settings, Download, History, ShieldCheck, Lock, Unlock } from 'lucide-react';
 
 // --- 1. CONFIG FIREBASE ---
 const firebaseConfig = {
@@ -77,7 +77,7 @@ const getLindungMonthOptions = () => {
 
 // --- HELPER COMPONENTS ---
 const Card = ({ children, className = "" }) => (
-  <div className={`hr-card bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>
+  <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>
     {children}
   </div>
 );
@@ -90,7 +90,7 @@ const Badge = ({ status }) => {
     Draft: "bg-gray-100 text-gray-500 border-gray-200", 
     Submitted: "bg-blue-100 text-blue-800 border-blue-200" 
   };
-  return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[status] || styles.Pending}`}>{status}</span>;
+  return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${styles[status] || styles.Pending}`}>{status}</span>;
 };
 
 const UltramapLogo = ({ className = "h-10" }) => (
@@ -400,223 +400,6 @@ const LeaveHistoryViewer = ({ users, leaves, getRemainingLeave }) => {
     );
 };
 
-const HR_THEME = `
-.hr-ui {
-  --ink: #17263b;
-  --muted: #51637a;
-  --line: #dce5ef;
-  --surface: #f3f7fb;
-  --accent: #0e665e;
-  --accent-pale: #e2f3ef;
-  --sidebar: #102b32;
-  min-height: 100vh;
-  color: var(--ink);
-  background: var(--surface);
-  font: 1rem/1.5 "Inter", "Segoe UI", system-ui, sans-serif;
-}
-.hr-ui *, .hr-ui *::before, .hr-ui *::after { box-sizing: border-box; }
-.hr-ui .hr-dashboard .font-sans { font-family: inherit; }
-.hr-ui button { cursor: pointer; }
-.hr-ui button:disabled { cursor: not-allowed; }
-.hr-ui :is(input, select, textarea, button, a):focus-visible {
-  outline: 3px solid #4b90eb;
-  outline-offset: 3px;
-}
-.hr-ui .hr-card {
-  border-color: var(--line);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px #17263b08;
-}
-.hr-ui input, .hr-ui select, .hr-ui textarea {
-  color: var(--ink);
-  border: 1px solid #bfcddd;
-  border-radius: 9px;
-  min-height: 40px;
-  font-size: .925rem;
-}
-.hr-brand { display: flex; align-items: center; gap: 12px; color: white; }
-.hr-brand-mark {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  color: #123a34;
-  background: #a6ebd6;
-  flex: none;
-}
-.hr-brand strong { display: block; font-size: 1.13rem; letter-spacing: -.02em; }
-.hr-brand small { display: block; color: #bdccd7; font-size: .77rem; }
-.hr-login { display: grid; grid-template-columns: minmax(300px, .94fr) minmax(340px, 1.06fr); }
-.hr-login-brand {
-  background: radial-gradient(ellipse at 12% 100%, #1d625c, #102b32 65%);
-  color: white;
-  padding: clamp(28px, 5vw, 72px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: clamp(36px, 14vh, 148px);
-}
-.hr-login-intro { max-width: 510px; }
-.hr-login-intro h1 { font-size: clamp(2.1rem, 4.7vw, 4.6rem); line-height: 1.03; letter-spacing: -.06em; font-weight: 750; margin: 0; }
-.hr-login-intro p { color: #d0e7e2; margin: 20px 0 26px; }
-.hr-login-intro ul { list-style: none; padding: 0; display: grid; gap: 12px; }
-.hr-login-intro li { display: flex; align-items: center; gap: 12px; color: #f0faf7; }
-.hr-login-intro li svg { color: #a6ebd6; }
-.hr-login-main { display: grid; align-items: center; justify-items: center; padding: clamp(22px, 5vw, 70px); }
-.hr-login-content {
-  max-width: 470px;
-  width: 100%;
-  padding: clamp(22px, 4vw, 44px);
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: white;
-  box-shadow: 0 20px 64px #17263b0d;
-}
-.hr-login-content h2 { margin: 14px 0 4px; font-size: 2rem; letter-spacing: -.045em; font-weight: 750; }
-.hr-login-content p { color: var(--muted); margin: 0 0 27px; }
-.hr-login-content label { font-size: .9rem; font-weight: 650; display: block; margin: 14px 0 6px; }
-.hr-login-content input { width: 100%; padding: 11px 12px; background: white; color: var(--ink); }
-.hr-password { position: relative; }
-.hr-password input { padding-right: 50px; }
-.hr-password button { position: absolute; inset: 2px 2px 2px auto; display: grid; place-items: center; width: 42px; color: var(--muted); border-radius: 8px; }
-.hr-primary { margin-top: 22px; width: 100%; padding: 11px 16px; background: var(--accent); color: white; border-radius: 9px; font-weight: 700; }
-.hr-primary:hover { background: #084b46; }
-.hr-workspace { display: grid; grid-template-columns: 238px minmax(0, 1fr); }
-.hr-admin { --accent: #244db4; --accent-pale: #e7edff; --sidebar: #142343; }
-.hr-sidebar {
-  background: var(--sidebar);
-  height: 100dvh;
-  position: sticky;
-  top: 0;
-  align-self: start;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  color: white;
-  padding: 25px 16px 18px;
-}
-.hr-sidebar .hr-brand { padding-inline: 8px; }
-.hr-admin .hr-brand-mark { background: #c6d6ff; color: #182c64; }
-.hr-sidebar-title { font-size: .8rem; font-weight: 700; color: #c4d1df; margin: 22px 8px 0; }
-.hr-sidebar nav { display: grid; gap: 5px; }
-.hr-sidebar a, .hr-signout {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 11px;
-  border-radius: 9px;
-  font-size: .9rem;
-  color: #edf4fa;
-  text-decoration: none;
-  text-align: left;
-}
-.hr-sidebar a:hover, .hr-signout:hover { background: #ffffff20; }
-.hr-signout { margin-top: auto; border: 1px solid #ffffff32; }
-.hr-topbar {
-  background: white;
-  border-bottom: 1px solid var(--line);
-  padding: 12px clamp(16px, 3.2vw, 40px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: .94rem;
-  font-weight: 650;
-  min-height: 68px;
-}
-.hr-profile { display: flex; align-items: center; gap: 10px; line-height: 1.25; }
-.hr-profile small { display: block; color: var(--muted); font-size: .78rem; margin-top: 4px; }
-.hr-avatar {
-  display: grid;
-  place-items: center;
-  width: 39px;
-  height: 39px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--accent-pale);
-  color: var(--accent);
-}
-.hr-main { max-width: 1430px; margin-inline: auto; padding: clamp(16px, 3.2vw, 40px); }
-.hr-dashboard, .hr-stack { display: grid; align-content: start; gap: 22px; min-width: 0; }
-.hr-dashboard > *, .hr-stack > *, .hr-workspace-body { min-width: 0; }
-.hr-dashboard [id^="hr-"] { scroll-margin-top: 20px; }
-.hr-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-.hr-heading h1 { font-size: clamp(1.85rem, 3.35vw, 3rem); font-weight: 750; letter-spacing: -.055em; line-height: 1.08; }
-.hr-heading p { color: var(--muted); margin-top: 8px; }
-.hr-period { display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 9px; background: white; border: 1px solid var(--line); font-size: .875rem; color: var(--muted); }
-.hr-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.hr-team { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.hr-metric {
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: clamp(16px, 2.5vw, 24px);
-  box-shadow: 0 4px 16px #17263b08;
-}
-.hr-metric p { margin: 11px 0 4px; color: var(--muted); font-size: .91rem; font-weight: 650; }
-.hr-metric strong { display: block; font-size: clamp(1.65rem, 3vw, 2.6rem); line-height: 1.14; font-weight: 750; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-.hr-icon { display: block; box-sizing: content-box; padding: 9px; border-radius: 11px; color: var(--accent); background: var(--accent-pale); }
-.hr-salary { background: var(--sidebar); color: white; border-color: transparent; }
-.hr-salary p { color: #d4e2ec; }
-.hr-metric-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.hr-metric-top button { padding: 8px; border-radius: 8px; }
-.hr-salary-action { display: inline-flex; align-items: center; gap: 8px; background: #ffffff1c; padding: 7px 11px; font-size: .88rem; border-radius: 9px; margin-top: 13px; }
-.hr-salary-action:hover, .hr-metric-top button:hover { background: #ffffff32; }
-.hr-admin-grid, .hr-staff-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 22px; }
-.hr-staff-grid > .hr-stack { display: contents; }
-.hr-dashboard h3, .hr-dashboard h4 { text-transform: none; letter-spacing: -.015em; color: var(--ink); font-size: 1.06rem; }
-.hr-dashboard .hr-card :is(button:not(.aspect-square), label, th) { font-size: .875rem; text-transform: none; letter-spacing: normal; }
-.hr-dashboard th { white-space: nowrap; }
-.hr-dashboard td { white-space: nowrap; }
-.hr-dashboard .bg-blue-600 { background-color: var(--accent); }
-.hr-dashboard .hr-card input[type="date"] { min-width: 0; }
-.hr-dashboard #hr-attendance .aspect-square { border-radius: 8px; font-size: .875rem; }
-.hr-dashboard #hr-leave .bg-slate-800 { background: var(--accent); }
-.hr-dashboard #hr-payslips > div { margin: 0; background: white; border: 1px solid var(--line); padding: 22px; border-radius: 16px; }
-@media (max-width: 1180px) {
-  .hr-admin-grid { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 850px) {
-  .hr-workspace { display: block; }
-  .hr-sidebar { position: relative; height: auto; padding: 14px 16px; gap: 12px; flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .hr-sidebar-title { display: none; }
-  .hr-sidebar nav { display: flex; overflow: auto; width: 100%; order: 3; }
-  .hr-sidebar a { white-space: nowrap; }
-  .hr-signout { margin: 0 0 0 auto; }
-  .hr-login { grid-template-columns: minmax(0, 1fr); }
-  .hr-login-brand { gap: 18px; padding: 25px 22px; }
-  .hr-login-intro p { margin: 8px 0 0; }
-  .hr-login-intro ul { display: none; }
-  .hr-login-main { align-items: start; }
-}
-@media (max-width: 590px) {
-  .hr-staff-grid, .hr-metrics { grid-template-columns: minmax(0, 1fr); }
-  .hr-team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hr-team > :first-child { grid-column: 1 / -1; }
-  .hr-dashboard .hr-card { padding: 16px; }
-}
-@media print {
-  .hr-workspace, .hr-main, .hr-workspace-body { display: block; margin: 0; padding: 0; max-width: none; background: white; }
-  .hr-sidebar, .hr-topbar, .hr-payslip-back { display: none !important; }
-}
-`;
-
-const HrBrand = () => (
-  <div className="hr-brand">
-    <span className="hr-brand-mark"><Layers size={21} aria-hidden="true" /></span>
-    <div><strong>Ultramap</strong><small>Solution · Portal HR</small></div>
-  </div>
-);
-
-const SummaryTile = ({ icon: Icon, label, value }) => (
-  <article className="hr-metric">
-    <Icon className="hr-icon" size={22} aria-hidden="true" />
-    <p>{label}</p>
-    <strong>{value}</strong>
-  </article>
-);
-
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -626,7 +409,6 @@ export default function App() {
   const [settings, setSettings] = useState({ customSubmissionDate: null });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [viewedPayslip, setViewedPayslip] = useState(null);
   const [currentDate] = useState(new Date()); 
   const [hideSalary, setHideSalary] = useState(false);
@@ -694,9 +476,7 @@ export default function App() {
   const handleLogin = async (e) => { 
     e.preventDefault(); 
     try { 
-      await signInWithEmailAndPassword(auth, email, password);
-      setPassword('');
-      setShowPassword(false); 
+      await signInWithEmailAndPassword(auth, email, password); 
     } catch (err) { 
       console.error("Login Error:", err);
       alert(`Gagal Log Masuk: ${err.message}`); 
@@ -803,114 +583,51 @@ export default function App() {
   const isCutoffReached = currentDate.getDate() >= effectiveCutoff;
 
   if (!currentUser) return (
-    <div className="hr-ui hr-login">
-      <style>{HR_THEME}</style>
-      <aside className="hr-login-brand">
-        <HrBrand />
-        <div className="hr-login-intro">
-          <h1>Urusan kerja dalam satu portal.</h1>
-          <p>Semak slip gaji, urus cuti dan rekod kehadiran bersama Ultramap Solution.</p>
-          <ul>{[[Wallet, 'Gaji & slip gaji'], [Calendar, 'Permohonan cuti'], [ClipboardList, 'Timesheet kerja']].map(([Icon, title]) => (
-            <li key={title}><Icon size={19} aria-hidden="true" />{title}</li>
-          ))}</ul>
-        </div>
-      </aside>
-      <main className="hr-login-main">
-        <div className="hr-login-content">
-          <ShieldCheck size={26} className="hr-icon" aria-hidden="true" />
-          <h2>Log masuk</h2>
-          <p>Gunakan e-mel dan kata laluan akaun Ultramap anda.</p>
-          <form onSubmit={handleLogin}>
-            <label htmlFor="hr-email">E-mel</label>
-            <input id="hr-email" type="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} required />
-            <label htmlFor="hr-password">Kata laluan</label>
-            <div className="hr-password">
-              <input id="hr-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required />
-              <button type="button" aria-label={showPassword ? 'Sembunyikan kata laluan' : 'Tunjukkan kata laluan'} onClick={() => setShowPassword(value => !value)}>
-                {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-              </button>
-            </div>
-            <button type="submit" className="hr-primary">Log masuk</button>
-          </form>
-        </div>
-      </main>
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
+      <Card className="w-full max-w-sm p-8">
+        <div className="flex justify-center mb-6"><UltramapLogo /></div>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded outline-none" required />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border p-2 rounded outline-none" required />
+          </div>
+          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-bold uppercase tracking-widest text-sm hover:bg-blue-700 transition-colors">Masuk</button>
+        </form>
+      </Card>
     </div>
   );
 
-  const isAdmin = currentUser.role !== 'staff';
-  const portalTitle = isAdmin ? 'Panel Admin' : 'Portal Pekerja';
-  const monthLabel = currentDate.toLocaleDateString('ms-MY', { month: 'long', year: 'numeric' });
-  const navItems = [
-    ['hr-overview', LayoutDashboard, 'Ringkasan'],
-    ...(isAdmin ? [['hr-payroll', Settings, 'Tetapan Gaji'], ['hr-attendance', ClipboardList, 'Timesheet Staf'], ['hr-approvals', ShieldCheck, 'Kelulusan Cuti']]
-      : [['hr-attendance', ClipboardList, 'Timesheet']]),
-    ['hr-leave', Calendar, 'Cuti Saya'],
-    ['hr-payslips', FileText, 'Slip Gaji'],
-  ];
-
   return (
-    <div className={`hr-ui hr-workspace ${isAdmin ? 'hr-admin' : 'hr-employee'}`}>
-        <style>{HR_THEME}</style>
-        <aside className="hr-sidebar print:hidden">
-          <HrBrand />
-          <p className="hr-sidebar-title">{portalTitle}</p>
-          <nav aria-label="Navigasi portal">
-            {navItems.map(([id, Icon, title]) => (
-              <a key={id} href={`#${id}`} onClick={event => {
-                event.preventDefault();
-                setViewedPayslip(null);
-                window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
-              }}><Icon size={18} aria-hidden="true" />{title}</a>
-            ))}
-          </nav>
-          <button className="hr-signout" onClick={() => { setViewedPayslip(null); setEditingUser(null); setShowAdminTimesheet(false); signOut(auth); }}>
-            <LogOut size={18} aria-hidden="true" /> Keluar
-          </button>
-        </aside>
-        <div className="hr-workspace-body">
-          <header className="hr-topbar print:hidden">
-            <span>{portalTitle}</span>
-            <div className="hr-profile">
-              <span className="hr-avatar" aria-hidden="true">{(currentUser.nickname || currentUser.name || 'U').trim().slice(0, 2).toUpperCase()}</span>
-              <div><strong>{currentUser.name}</strong><small>{currentUser.role === 'manager' ? 'Manager' : currentUser.role === 'super_admin' ? 'Super Admin' : 'Pekerja'}</small></div>
-            </div>
-          </header>
-        <main className="hr-main">
+    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
+        <nav className="bg-white border-b sticky top-0 z-20 px-4 h-16 flex items-center justify-between shadow-sm print:hidden">
+            <UltramapLogo /><button onClick={() => signOut(auth)} className="text-xs bg-slate-200 px-3 py-1 rounded font-bold uppercase tracking-widest hover:bg-slate-300 transition-colors">Keluar</button>
+        </nav>
+        <main className="max-w-7xl mx-auto p-4 lg:p-8">
             {viewedPayslip ? (
-                <div><button onClick={() => setViewedPayslip(null)} className="hr-payslip-back mb-4 flex items-center gap-2 text-slate-500 font-bold uppercase tracking-widest text-xs hover:text-slate-800"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
+                <div><button onClick={() => setViewedPayslip(null)} className="mb-4 flex items-center gap-2 text-slate-500 font-bold uppercase tracking-widest text-xs hover:text-slate-800"><ChevronLeft size={16} /> Kembali</button><PayslipDesign data={viewedPayslip.data} user={viewedPayslip.user} /></div>
             ) : (
-                <div className="hr-dashboard">
-                    <header id="hr-overview" className="hr-heading">
-                        <div>
-                            <h1>{isAdmin ? 'Pengurusan HR' : `Hai, ${currentUser.nickname}!`}</h1>
-                            <p>{isAdmin ? 'Gaji, kehadiran dan permohonan cuti staf.' : 'Ringkasan gaji, cuti dan kehadiran anda.'}</p>
+                <div className="space-y-6">
+                    <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-widest border-b-2 border-blue-600 inline-block">Hi! {currentUser.nickname}!</h1>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-slate-800 rounded-xl p-5 text-white shadow-lg relative">
+                            <div className="flex justify-between items-start"><p className="text-slate-400 text-xs mb-1 uppercase tracking-widest">Anggaran Gaji</p><button onClick={() => setHideSalary(!hideSalary)} className="text-slate-400 hover:text-white transition-colors">{hideSalary ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
+                            <h2 className="text-2xl lg:text-3xl font-bold mt-1">{hideSalary ? 'RM ****' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</h2>
+                            <button onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })} className="bg-white/20 py-1 px-3 rounded text-[10px] font-bold mt-2 uppercase tracking-widest hover:bg-white/30">Slip Gaji</button>
                         </div>
-                        <span className="hr-period"><Calendar size={17} aria-hidden="true" />{monthLabel}</span>
-                    </header>
-                    {isAdmin && <div className="hr-metrics hr-team">
-                        <SummaryTile icon={Layers} label="Bilangan Staf" value={users.filter(u => u.role === 'staff').length} />
-                        <SummaryTile icon={ShieldCheck} label="Cuti Menunggu Kelulusan" value={leaves.filter(l => l.status === 'Pending').length} />
-                        <SummaryTile icon={Calendar} label="Tarikh Akhir Timesheet" value={`${effectiveCutoff} hb`} />
-                    </div>}
-                    <div className="hr-metrics">
-                        <article className="hr-metric hr-salary">
-                            <div className="hr-metric-top">
-                                <Wallet className="hr-icon" size={22} aria-hidden="true" />
-                                <button type="button" aria-label={hideSalary ? 'Tunjukkan gaji' : 'Sembunyikan gaji'} onClick={() => setHideSalary(!hideSalary)}>
-                                  {hideSalary ? <EyeOff size={19} /> : <Eye size={19} />}
-                                </button>
-                            </div>
-                            <p>{isAdmin ? 'Anggaran Gaji Saya' : 'Anggaran Gaji'}</p>
-                            <strong>{hideSalary ? 'RM ••••' : `RM ${calculatePayroll(currentUser.id).netPay?.toFixed(2)}`}</strong>
-                            <button className="hr-salary-action" onClick={() => setViewedPayslip({ data: calculatePayroll(currentUser.id), user: currentUser })}><FileText size={16} aria-hidden="true" /> Lihat slip gaji</button>
-                        </article>
-                        <SummaryTile icon={Calendar} label={isAdmin ? 'Baki Cuti Saya' : 'Baki Cuti'} value={`${getRemainingLeave(currentUser.id)} hari`} />
+                        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col justify-center">
+                            <p className="text-slate-500 text-xs mb-1 uppercase tracking-widest">Baki Cuti</p>
+                            <h2 className="text-3xl font-bold text-slate-800">{getRemainingLeave(currentUser.id)} Hari</h2>
+                        </div>
                     </div>
-                    <div className={isAdmin ? 'hr-admin-grid' : 'hr-staff-grid'}>
-                        <div className="hr-stack">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="space-y-6">
                             {currentUser.role !== 'staff' ? (
-                                <section id="hr-payroll" className="hr-stack">
-                                    <Card className="p-6">
+                                <>
+                                    <Card className="p-6 border-l-4 border-l-blue-600 shadow-sm">
                                         <h3 className="font-bold text-lg mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Settings size={20}/> Tetapan Cutoff</h3>
                                         <div className="flex items-center gap-3">
                                             <input type="number" placeholder="Hujung Bulan" value={tempCutoff} onChange={(e) => setTempCutoff(e.target.value)} className="w-20 border rounded p-1 font-bold text-lg text-center focus:ring-2 focus:ring-blue-400 outline-none" />
@@ -950,12 +667,11 @@ export default function App() {
                                             </tbody>
                                         </table>
                                     </Card>
-                                </section>
+                                </>
                             ) : (
-                                <section id="hr-attendance"><TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={(dateStr, userId, type, shouldDelete, remark) => { const existing = attendance.find(a => a.date === dateStr && a.userId === userId); if (shouldDelete && existing) deleteDoc(doc(db, "attendance", existing.id)); else if (existing) updateDoc(doc(db, "attendance", existing.id), { remark }); else addDoc(collection(db, "attendance"), { date: dateStr, userId, type, remark }); }} tsStatus={timesheets.find(t => t.userId === currentUser.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' }} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} /></section>
+                                <TimesheetWidget targetUserId={currentUser.id} currentDate={currentDate} customSubmissionDate={settings.customSubmissionDate} attendance={attendance} setAttendance={(dateStr, userId, type, shouldDelete, remark) => { const existing = attendance.find(a => a.date === dateStr && a.userId === userId); if (shouldDelete && existing) deleteDoc(doc(db, "attendance", existing.id)); else if (existing) updateDoc(doc(db, "attendance", existing.id), { remark }); else addDoc(collection(db, "attendance"), { date: dateStr, userId, type, remark }); }} tsStatus={timesheets.find(t => t.userId === currentUser.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' }} updateTimesheetStatus={updateTimesheetStatusDB} isAdminView={false} />
                             )}
-                            <section id="hr-leave" className="hr-stack">
-                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Permohonan dihantar!");}} className="space-y-3"><div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><input aria-label="Tarikh mula cuti" name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/><input aria-label="Tarikh akhir cuti" name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/></div><input aria-label="Sebab cuti" name="r" placeholder="Sebab Cuti" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold uppercase text-xs tracking-widest hover:bg-slate-900 transition-colors shadow">Hantar Permohonan</button></form></Card>
+                            <Card className="p-6 shadow-sm"><h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 uppercase tracking-widest text-sm"><Send size={18} /> Permohonan Cuti</h3><form onSubmit={(e)=>{e.preventDefault(); const f=e.target; addDoc(collection(db,'leaves'),{userId:currentUser.id,startDate:f.s.value,endDate:f.e.value,reason:f.r.value,status:'Pending',days:calculateLeaveDuration(f.s.value, f.e.value)}); f.reset(); alert("Permohonan dihantar!");}} className="space-y-3"><div className="grid grid-cols-2 gap-2"><input name="s" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/><input name="e" type="date" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/></div><input name="r" placeholder="Sebab Cuti" className="border p-2 rounded w-full focus:ring-2 focus:ring-slate-400 outline-none" required/><button className="bg-slate-800 text-white w-full py-3 rounded font-bold uppercase text-xs tracking-widest hover:bg-slate-900 transition-colors shadow">Hantar Permohonan</button></form></Card>
                             <Card className="p-6 shadow-sm">
                                 <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-sm uppercase tracking-widest"><History size={18} /> Sejarah Cuti Saya</h3>
                                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
@@ -975,10 +691,11 @@ export default function App() {
                                     {leaves.filter(l => l.userId === currentUser.id).length === 0 && <p className="text-xs text-slate-400 italic text-center py-4">Tiada rekod cuti.</p>}
                                 </div>
                             </Card>
-                            </section>
                         </div>
-                        {isAdmin && <div className="hr-stack">
-                                    <section id="hr-attendance"><h3 className="font-bold text-lg text-slate-700 mb-4 uppercase tracking-widest text-sm">Panel Timesheet Staff</h3><div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => {
+                        <div className="space-y-6">
+                            {currentUser.role !== 'staff' && (
+                                <>
+                                    <div><h3 className="font-bold text-lg text-slate-700 mb-4 uppercase tracking-widest text-sm">Panel Timesheet Staff</h3><div className="space-y-4">{users.filter(u => u.role === 'staff').map(staff => {
                                         const ts = timesheets.find(t => t.userId === staff.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' };
                                         return (<Card key={staff.id} className="p-4 shadow-sm"><div className="flex justify-between items-center mb-2"><span className="font-bold text-slate-700 uppercase">{staff.name}</span><Badge status={ts.status} /></div>{showAdminTimesheet === staff.id ? (
                                             <div className="mt-2 space-y-2">
@@ -993,20 +710,22 @@ export default function App() {
                                                 </div>
                                             </div>
                                         ) : (<button onClick={() => setShowAdminTimesheet(staff.id)} className="w-full bg-slate-100 py-2 rounded text-xs font-bold uppercase hover:bg-slate-200 transition-colors">Semak & Luluskan</button>)}</Card>);
-                                    })}</div></section>
-                                    <section id="hr-approvals"><Card className="p-6 shadow-sm"><h3 className="font-bold mb-4 uppercase text-sm tracking-widest border-b pb-2">Pengesahan Cuti (Admin)</h3>
-                                        {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 hover:border-emerald-200 transition-all"><div className="text-xs"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><button onClick={()=>updateDoc(doc(db, "leaves", leave.id), { status: 'Approved', approvedBy: currentUser.nickname })} className="bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors">Sahkan Cuti</button></div>))}
+                                    })}</div></div>
+                                    <Card className="p-6 shadow-sm"><h3 className="font-bold mb-4 uppercase text-sm tracking-widest border-b pb-2">Pengesahan Cuti (Admin)</h3>
+                                        {leaves.filter(l=>l.status==='Pending').map(leave=>(<div key={leave.id} className="p-3 border rounded mb-2 flex justify-between items-center bg-slate-50 hover:border-emerald-200 transition-all"><div className="text-xs"><b>{users.find(u=>u.id===leave.userId)?.nickname}</b>: {leave.startDate}</div><button onClick={()=>updateDoc(doc(db, "leaves", leave.id), { status: 'Approved', approvedBy: currentUser.nickname })} className="bg-red-600 text-white px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm hover:bg-red-700 transition-colors">Sahkan Cuti</button></div>))}
                                         {leaves.filter(l=>l.status==='Pending').length === 0 && <p className="text-xs text-slate-400 italic">Tiada permohonan cuti baru.</p>}
                                         <LeaveHistoryViewer users={users} leaves={leaves} getRemainingLeave={getRemainingLeave} />
-                                    </Card></section>
-                        </div>}
+                                    </Card>
+                                </>
+                            )}
+                        </div>
                     </div>
-                    <div id="hr-payslips" className="print:hidden"><PayslipFolderSystem currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} timesheetStatus={timesheets.find(t => t.userId === currentUser.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' }} currentDate={currentDate} /></div>
+                    <div className="print:hidden"><PayslipFolderSystem currentUser={currentUser} calculatePayroll={calculatePayroll} setViewedPayslip={setViewedPayslip} timesheetStatus={timesheets.find(t => t.userId === currentUser.id && t.month === currentDate.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' }).toUpperCase()) || { status: 'Draft' }} currentDate={currentDate} /></div>
                 </div>
             )}
             {editingUser && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <Card className="w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 shadow-2xl">
+                    <Card className="w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-4 border-b pb-2">
                             <h3 className="font-bold text-lg uppercase tracking-widest">Edit Profil: {editingUser.nickname}</h3>
                             <button 
@@ -1072,7 +791,7 @@ export default function App() {
                                 </div>
                             </div>
                             
-                            <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1'} gap-2 items-start`}>
+                            <div className={`grid ${editingUser.role === 'staff' ? 'grid-cols-3' : 'grid-cols-1'} gap-2 items-start`}>
                                 <div>
                                     <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
                                         KWSP Manual {!isBaseFieldsUnlocked && <Lock size={9} className="text-slate-400" />}
@@ -1183,7 +902,6 @@ export default function App() {
                 </div>
             )}
         </main>
-        </div>
     </div>
   );
 }
